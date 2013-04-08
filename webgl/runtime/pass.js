@@ -366,6 +366,8 @@ var global = window;
                 context[WORLD] = mat4.identity();
                 var pathCount = 0;
 
+                if (!this.scene)
+                    return;
                 this.scene.rootNode.apply( function(node, parent, context) {
                     var worldMatrix = mat4.create();
 
