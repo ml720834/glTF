@@ -79,18 +79,18 @@ exports.Stage = Montage.create(Component, /** @lends module:"montage/ui/stage.re
 
             //that's really for the demo.. 
             var self = this;
-            if (this.view.engine) 
-            this.view.engine.technique.rootPass.scene.rootNode.apply( function(node, parent) {
-                if (node.meshes) {
-                    if (node.meshes.length) {
-                        node.meshes.forEach( function(mesh) {
-                          mesh.loadedPrimitivesCount = 0;
-                          mesh.step = 0;
-                        }, self);
+            if (this.view.engine)
+                this.view.engine.technique.rootPass.scene.rootNode.apply( function(node, parent) {
+                    if (node.meshes) {
+                        if (node.meshes.length) {
+                            node.meshes.forEach( function(mesh) {
+                                mesh.loadedPrimitivesCount = 0;
+                                mesh.step = 0;
+                            }, self);
+                        }
                     }
-                }
-                return null;
-            } , true, null);
+                    return null;
+                } , true, null);
 
             var resourceManager = this.view.getResourceManager();
             if (resourceManager) {

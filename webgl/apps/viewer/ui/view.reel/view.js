@@ -41,13 +41,15 @@ var ResourceManager = require("c2j/helpers/resource-manager").ResourceManager;
 var Engine = require("runtime/engine").Engine;
 var Material = require("runtime/material").Material;
 var Utilities = require("runtime/utilities").Utilities;
-var dom = require("montage/ui/dom");
+var dom = require("montage/core/dom");
 var Point = require("montage/core/geometry/point").Point;
 var OrbitCamera = require("runtime/dependencies/camera.js").OrbitCamera;
-var TranslateComposer = require("montage/ui/composer/translate-composer").TranslateComposer;
+var TranslateComposer = require("montage/composer/translate-composer").TranslateComposer;
 var RuntimeTFLoader = require("runtime/runtime-tf-loader").RuntimeTFLoader;
 
 Material.implicitAnimationsEnabled = true;
+
+var translateComposer = null;
 
 /**
     Description TODO
@@ -74,6 +76,7 @@ exports.View = Montage.create(Component, /** @lends module:"montage/ui/view.reel
     canvas: {
         get: function() {
             if (this.templateObjects) {
+                              
                 return this.templateObjects.canvas;
             } 
             return null;
@@ -178,12 +181,16 @@ exports.View = Montage.create(Component, /** @lends module:"montage/ui/view.reel
                         //FIXME:HACK: loader should be passed as arg, also multiple observers should pluggable here so that the top level could just pick that size info. (for the progress)
                     }.bind(this);
 
-                    var loader = Object.create(RuntimeTFLoader);
-                    //debugger;
-                    loader.initWithPath(value);
-                    loader.delegate = readerDelegate;
+                    if (value) {
+                        var loader = Object.create(RuntimeTFLoader);
+                        //debugger;
+                        loader.initWithPath(value);
+                        loader.delegate = readerDelegate;
 
-                    loader.load(null , null);
+                        loader.load(null , null);
+                    else {
+                        this.scene = null;
+                    }
                 }
 
                 this._scenePath = value;
@@ -198,50 +205,52 @@ exports.View = Montage.create(Component, /** @lends module:"montage/ui/view.reel
         value:function (scene) {
             if (this.engine) {
                 if (this.engine.technique.rootPass) {
-                    //compute hierarchical bbox for the whole scene
-                    //this will be removed from this place when node bounding box become is implemented as hierarchical
-                    var ctx = mat4.identity();
-                    var node = scene.rootNode;
-                    var sceneBBox = null;
-                    var self = this;
-                    node.apply( function(node, parent, parentTransform) {
-                        var modelMatrix = mat4.create();
-                        mat4.multiply( parentTransform, node.transform, modelMatrix);
+                    if (scene) {
+                        //compute hierarchical bbox for the whole scene
+                        //this will be removed from this place when node bounding box become is implemented as hierarchical
+                        var ctx = mat4.identity();
+                        var node = scene.rootNode;
+                        var sceneBBox = null;
+                        var self = this;
+                        node.apply( function(node, parent, parentTransform) {
+                            var modelMatrix = mat4.create();
+                            mat4.multiply( parentTransform, node.transform, modelMatrix);
 
-                        if (node.boundingBox) {
-                            var bbox = Utilities.transformBBox(node.boundingBox, modelMatrix);
-                            if (sceneBBox) {
-                                sceneBBox = Utilities.mergeBBox(bbox, sceneBBox);
-                            } else {
-                                sceneBBox = bbox;
+                            if (node.boundingBox) {
+                                var bbox = Utilities.transformBBox(node.boundingBox, modelMatrix);
+                                if (sceneBBox) {
+                                    sceneBBox = Utilities.mergeBBox(bbox, sceneBBox);
+                                } else {
+                                    sceneBBox = bbox;
+                                }
                             }
-                        }
 
-                        return modelMatrix;
-                    }, true, ctx);
+                            return modelMatrix;
+                        }, true, ctx);
 
-                    var sceneSize = [(sceneBBox[1][0] - sceneBBox[0][0]) ,
+                        var sceneSize = [(sceneBBox[1][0] - sceneBBox[0][0]) ,
                             (sceneBBox[1][1] - sceneBBox[0][1]) ,
                             (sceneBBox[1][2] - sceneBBox[0][2]) ];
 
-                    //size to fit
-                    var scaleFactor = sceneSize[0] > sceneSize[1] ? sceneSize[0] : sceneSize[1];
-                    scaleFactor = sceneSize[2] > scaleFactor ? sceneSize[2] : scaleFactor;
+                        //size to fit
+                        var scaleFactor = sceneSize[0] > sceneSize[1] ? sceneSize[0] : sceneSize[1];
+                        scaleFactor = sceneSize[2] > scaleFactor ? sceneSize[2] : scaleFactor;
 
-                    scaleFactor =  1 / scaleFactor;
-                     var scaleMatrix = mat4.scale(mat4.identity(), [scaleFactor, scaleFactor, scaleFactor]);
-                    var center = vec3.createFrom(0,0,(sceneSize[2]*scaleFactor)/2);
-                    self.camera.setCenter(center);
-                    var translationVector = vec3.createFrom(    -((sceneSize[0] / 2) + sceneBBox[0][0]),
-                                                        -((sceneSize[1] / 2) + sceneBBox[0][1]),
-                                                        -( sceneBBox[0][2]));
-                         
-                    var translation = mat4.translate(scaleMatrix, [
-                                        translationVector[0],
-                                        translationVector[1],
-                                        translationVector[2]]);
+                        scaleFactor =  1 / scaleFactor;
+                        var scaleMatrix = mat4.scale(mat4.identity(), [scaleFactor, scaleFactor, scaleFactor]);
+                        var center = vec3.createFrom(0,0,(sceneSize[2]*scaleFactor)/2);
+                        //self.camera.setCenter(center);
+                        var translationVector = vec3.createFrom(    -((sceneSize[0] / 2) + sceneBBox[0][0]),
+                            -((sceneSize[1] / 2) + sceneBBox[0][1]),
+                            -( sceneBBox[0][2]));
 
-                    mat4.set(translation, scene.rootNode.transform);
+                        var translation = mat4.translate(scaleMatrix, [
+                            translationVector[0],
+                            translationVector[1],
+                            translationVector[2]]);
+
+                        mat4.set(translation, scene.rootNode.transform);
+                    }
                     this.engine.technique.rootPass.scene = scene;
                     this.needsDraw = true;
                 }
@@ -257,18 +266,20 @@ exports.View = Montage.create(Component, /** @lends module:"montage/ui/view.reel
 
     prepareForDraw: {
         value: function() {
-
+                              
             var webGLContext = this.canvas.getContext("experimental-webgl", { antialias: true}) ||this.canvas.getContext("webgl", { antialias: true});
             var options = null;
             this.engine = Object.create(Engine);
             this.engine.init(webGLContext, options);
             this.engine.renderer.resourceManager.observers.push(this);
 
-            this.canvas.setAttribute("height", this._height);
-            this.canvas.setAttribute("width", this._width);
+            if (this._scene)
+                this.applyScene(this._scene);
+
+            //this.canvas.setAttribute("height", this._height);
+            //this.canvas.setAttribute("width", this._width);
 
             this.camera = new MontageOrbitCamera(this.canvas);
-
             this.camera.maxDistance = 200;
             this.camera.minDistance = 0.0;
             this.camera.setDistance(1.3);//0.9999542236328);
@@ -402,7 +413,7 @@ exports.View = Montage.create(Component, /** @lends module:"montage/ui/view.reel
     },
 
     showBBOX: {
-        value: true, writable: true
+        value: false, writable: true
     },
 
     drawGradient: {
@@ -515,7 +526,6 @@ exports.View = Montage.create(Component, /** @lends module:"montage/ui/view.reel
 
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-//                gl.generateMipmap(gl.TEXTURE_2D);
                 gl.bindTexture(gl.TEXTURE_2D, null);
                 self._floorTextureLoaded = true;
                 self.needsDraw = true;
@@ -871,7 +881,7 @@ exports.View = Montage.create(Component, /** @lends module:"montage/ui/view.reel
             if (value === this._width) {
                 return;
             }
-
+            //debugger;
             this._width = value * this.scaleFactor;
 
             this.needsDraw = true;
@@ -922,9 +932,18 @@ exports.View = Montage.create(Component, /** @lends module:"montage/ui/view.reel
         value: function() {
             var self = this;
 
-            if (null == this.width || null == this.height) {
-                return;
+            var webGLContext = this.getWebGLContext(),
+                renderer,
+                width,
+                height;
+
+            if (webGLContext) {
+                webGLContext.clearColor(0,0,0,0.);
+                webGLContext.clear(webGLContext.DEPTH_BUFFER_BIT | webGLContext.COLOR_BUFFER_BIT);
             }
+
+            if (!this._scene)
+                return;
 
             if(this.cameraAnimating) {
                 if (this.cameraAnimatingXVel < 0.0013) {
@@ -938,15 +957,6 @@ exports.View = Montage.create(Component, /** @lends module:"montage/ui/view.reel
                 this.needsDraw = true;
             }
 
-            var webGLContext = this.getWebGLContext(),
-                renderer,
-                width,
-                height;
-
-            if (webGLContext) {
-                webGLContext.clearColor(0,0,0,0.);
-                webGLContext.clear(webGLContext.DEPTH_BUFFER_BIT | webGLContext.COLOR_BUFFER_BIT);
-            }
             if (this.delegate) {
                 if (this.delegate.willDraw)   
                     this.delegate.willDraw(this);
@@ -954,15 +964,12 @@ exports.View = Montage.create(Component, /** @lends module:"montage/ui/view.reel
             if (this.scene) {
                 renderer = this.engine.renderer;
                 if (webGLContext) {
-                    this.canvas.setAttribute("width", this._width);
                     width = this._width;
-
-                    this.canvas.setAttribute("height", this._height);
                     height = this._height;
-
                     if (this.scaleFactor > 1) {
+
                         var offsetX = -(this.width/2);
-                        var offsetY = -(this.height/2);
+                        var offsetY = 0;//-(this.height/2);
                         var scale = 1./( this.scaleFactor);
 
                         this.canvas.style["-webkit-transform"] =  "scale("+scale+","+scale+") translateZ(0) translate("+ offsetX +"px,"+offsetY+"px)";
@@ -1004,7 +1011,7 @@ exports.View = Montage.create(Component, /** @lends module:"montage/ui/view.reel
                         mat4.multiply(scaleMatrix, node.transform) ;
                         mat4.set(scaleMatrix, node.transform);
                         */
-                        //FIXME: passing a matrix was the proper to do this, but right matrix updates are disabled (temporarly)
+                        //FIXME: passing a matrix was the proper to do this, but right now matrix updates are disabled (temporarly)
                         this.engine.technique.rootPass.viewPoint.flipped = true;
 
                         this.engine.render();
@@ -1058,24 +1065,54 @@ exports.View = Montage.create(Component, /** @lends module:"montage/ui/view.reel
         }
     },
 
+    captureResize: {
+        value: function(evt) {
+
+            this.needsDraw = true;
+
+        }
+    },
+
+    willDraw: {
+        value: function() {
+            var width = parseInt(window.getComputedStyle(this.element.parentElement, null).getPropertyValue("width"));
+            var height = parseInt(window.getComputedStyle(this.element.parentElement, null).getPropertyValue("height"));
+
+            if (width != this.width) {
+                this.canvas.setAttribute("width", this._width + "px");
+                this.width = width;
+            }
+
+            if (height != this.height) {
+                this.canvas.setAttribute("height", this._height + "px");
+                this.height = height;
+            }
+
+        }
+    },
+
     templateDidLoad: {
-        value: function() {            
+        value: function() {
+            self = this;
+
+            window.addEventListener("resize", this, true);
+
+            var parent = this.parentComponent;
+
+            var animationTimeout = null;
             var composer = TranslateComposer.create(),
-                self = this;
             translateComposer = composer;
             translateComposer.hasMomentum = true;
             translateComposer.allowFloats = true;
             translateComposer.pointerSpeedMultiplier = 0.15;
             this.addComposerForElement(composer, this.canvas);
 
-            var animationTimeout = null;
-
-            translateComposer.addPropertyChangeListener("translateY", function(notification) {
+            translateComposer.addPathChangeListener("translateY", function(notification) {
                 self._consideringPointerForPicking = false;
                 self.needsDraw = true;
             });
 
-            translateComposer.addPropertyChangeListener("translateX", function(notification) {
+            translateComposer.addPathChangeListener("translateX", function(notification) {
                 self._consideringPointerForPicking = false;
                 self.needsDraw = true;
             });
@@ -1099,7 +1136,6 @@ exports.View = Montage.create(Component, /** @lends module:"montage/ui/view.reel
 
 });
 
-var translateComposer = null;
 
 var MontageOrbitCamera = OrbitCamera;
 MontageOrbitCamera.prototype = Montage.create(OrbitCamera.prototype);
@@ -1107,18 +1143,25 @@ MontageOrbitCamera.prototype = Montage.create(OrbitCamera.prototype);
 MontageOrbitCamera.prototype._hookEvents = function (element) {
     var self = this, moving = false,
         lastX, lastY;
-
+    
+    if (!translateComposer) {
+        translateComposer = TranslateComposer.create();
+    }
+    
     //==============
     // Mouse Events
     //==============
     translateComposer.addEventListener('translateStart', function (event) {
         moving = true;
-        lastX = event.translateX;
-        lastY = event.translateY;
+        //FIXME
+        //lastX = event.translateX;
+        //lastY = event.translateY;
     }, false);
 
-    translateComposer.addPropertyChangeListener("translateY", function(notification) {
+    translateComposer.addPathChangeListener("translateY", function(notification) {
         if (moving) {
+            //FIXME
+            /*
             var xDelta = notification.target.translateX  - lastX,
                 yDelta = notification.target.translateY  - lastY;
 
@@ -1126,11 +1169,14 @@ MontageOrbitCamera.prototype._hookEvents = function (element) {
             lastY = notification.target.translateY;
 
             self.orbit(xDelta * 0.013, yDelta * 0.013);
+            */
         }
     });
 
-    translateComposer.addPropertyChangeListener("translateX", function(notification) {
+    translateComposer.addPathChangeListener("translateX", function(notification) {
         if (moving) {
+            //FIXME
+            /*
             var xDelta = notification.target.translateX  - lastX,
                 yDelta = notification.target.translateY  - lastY;
 
@@ -1138,6 +1184,7 @@ MontageOrbitCamera.prototype._hookEvents = function (element) {
             lastY = notification.target.translateY;
 
             self.orbit(xDelta * 0.013, yDelta * 0.013);
+            */
         }
     });
 
