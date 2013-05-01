@@ -191,9 +191,8 @@ exports.View = Montage.create(Component, /** @lends module:"montage/ui/view.reel
                     else {
                         this.scene = null;
                     }
+                    this._scenePath = value;
                 }
-
-                this._scenePath = value;
             }
         }, 
         get: function() {
