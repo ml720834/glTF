@@ -24,8 +24,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 // THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-define( ["webgl-tf-deprecated", "helpers/resource-manager"],
-    function(WebGLTFLoader, ResourceManager) {
+
+(function(WebGLTFLoader, ResourceManager) {
 
     // Utilities
 
@@ -594,4 +594,4 @@ define( ["webgl-tf-deprecated", "helpers/resource-manager"],
     return {
         ColladaJsonLoader: THREE.ColladaJsonLoader
     };
-});
+})(WebGLTFLoader, ResourceManager);

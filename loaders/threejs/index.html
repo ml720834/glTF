@@ -29,17 +29,12 @@
         </div>
 
         <script src="Three.js"></script>
-        <script src="require.js"></script>
+        <script src="webgl-tf-deprecated.js"></script>
+        <script src="./helpers/resource-manager.js"></script>
+        <script src="ColladaJsonLoader.js"></script>
 
         <script>
-            require.config({
-                baseUrl: ".",
-                paths: {
-                    runtime: "runtime",
-                    helpers: "helpers"
-            }});
-
-            require(['ColladaJsonLoader'], function() {
+			function onload() {
                 var container, stats;
 
                 var camera, scene, renderer;
@@ -149,7 +144,9 @@
 
                     renderer.render( scene, camera );
                 }
-            });
+            }
+
+            onload();
         </script>
 
     </body>
