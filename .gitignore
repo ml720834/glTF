@@ -12,3 +12,4 @@ converter/collada2gltf/collada2gltf.dir/
 converter/collada2gltf/ipch/
 converter/collada2gltf/lib/
 specification/.project
+.DS_Store
