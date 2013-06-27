@@ -294,12 +294,12 @@
         load: {
             enumerable: true,
             value: function(userInfo, options) {
-                this.threeResources = new ThreeBinaryLoader();
+                this.binaryLoader = new ThreeBinaryLoader();
                 WebGLTFLoader.load.call(this, userInfo, options);
             }
         },
 
-        threeResources: {
+        binaryLoader: {
             value: null,
             writable: true
 
@@ -309,7 +309,7 @@
 
         handleBuffer: {
             value: function(entryID, description, userInfo) {
-                this.threeResources.setEntry(entryID, null, description);
+                this.binaryLoader.setEntry(entryID, null, description);
                 description.type = "ArrayBuffer";
                 return true;
             }
@@ -317,12 +317,12 @@
 
         handleBufferView: {
             value: function(entryID, description, userInfo) {
-                this.threeResources.setEntry(entryID, null, description);
+                this.binaryLoader.setEntry(entryID, null, description);
 
-                var buffer =  this.threeResources.getEntry(description.buffer);
+                var buffer =  this.binaryLoader.getEntry(description.buffer);
                 description.type = "ArrayBufferView";
 
-                var bufferViewEntry = this.threeResources.getEntry(entryID);
+                var bufferViewEntry = this.binaryLoader.getEntry(entryID);
                 bufferViewEntry.buffer = buffer;
                 return true;
             }
@@ -344,7 +344,7 @@
 
         handleImage: {
             value: function(entryID, description, userInfo) {
-                this.threeResources.setEntry(entryID, null, description);
+                this.binaryLoader.setEntry(entryID, null, description);
                 return true;
             }
         },
@@ -357,7 +357,7 @@
                 var technique = description.techniques[description.technique];
                 var texture = technique.parameters.diffuse;
                 if (texture) {
-                    var imageEntry = this.threeResources.getEntry(texture.image);
+                    var imageEntry = this.binaryLoader.getEntry(texture.image);
                     if (imageEntry) {
                         texturePath = imageEntry.description.path;
                     }
@@ -372,7 +372,7 @@
                     map: LoadTexture(texturePath)
                 });
 
-                this.threeResources.setEntry(entryID, material, description);
+                this.binaryLoader.setEntry(entryID, material, description);
 
                 return true;
             }
@@ -388,7 +388,7 @@
         handleMesh: {
             value: function(entryID, description, userInfo) {
                 var mesh = new ThreeWebGLMesh();
-                this.threeResources.setEntry(entryID, mesh, description);
+                this.binaryLoader.setEntry(entryID, mesh, description);
                 var primitivesDescription = description.primitives;
                 if (!primitivesDescription) {
                     //FIXME: not implemented in delegate
@@ -402,24 +402,24 @@
                     if (primitiveDescription.primitive === "TRIANGLES") {
 
                         var geometry = new ThreeWebGLClassicGeometry();
-                        var materialEntry = this.threeResources.getEntry(primitiveDescription.material);
+                        var materialEntry = this.binaryLoader.getEntry(primitiveDescription.material);
 
                         mesh.addPrimitive(geometry, materialEntry.object);
 
                         var indicesID = entryID + "_indices"+"_"+i;
-                        var indicesEntry = this.threeResources.getEntry(indicesID);
+                        var indicesEntry = this.binaryLoader.getEntry(indicesID);
                         if (!indicesEntry) {
                             indices = primitiveDescription.indices;
                             indices.id = indicesID;
-                            var bufferEntry = this.threeResources.getEntry(indices.bufferView);
+                            var bufferEntry = this.binaryLoader.getEntry(indices.bufferView);
                             indices.bufferView = bufferEntry;
-                            this.threeResources.setEntry(indicesID, indices, indices);
-                            indicesEntry = this.threeResources.getEntry(indicesID);
+                            this.binaryLoader.setEntry(indicesID, indices, indices);
+                            indicesEntry = this.binaryLoader.getEntry(indicesID);
                         }
                         primitiveDescription.indices = indicesEntry.object;
 
                         var indicesContext = new IndicesContext(primitiveDescription.indices, geometry);
-                        var alreadyProcessedIndices = this.threeResources.binaryManager.getResource(primitiveDescription.indices, indicesDelegate, indicesContext);
+                        var alreadyProcessedIndices = this.binaryLoader.binaryManager.getResource(primitiveDescription.indices, indicesDelegate, indicesContext);
                         /*if(alreadyProcessedIndices) {
                             indicesDelegate.resourceAvailable(alreadyProcessedIndices, indicesContext);
                         }*/
@@ -431,16 +431,16 @@
 
                             var attribute;
                             var attributeID = primitiveDescription.semantics[semantic];
-                            var attributeEntry = this.threeResources.getEntry(attributeID);
+                            var attributeEntry = this.binaryLoader.getEntry(attributeID);
                             if (!attributeEntry) {
                                 //let's just use an anonymous object for the attribute
                                 attribute = description.attributes[attributeID];
                                 attribute.id = attributeID;
-                                this.threeResources.setEntry(attributeID, attribute, attribute);
+                                this.binaryLoader.setEntry(attributeID, attribute, attribute);
             
-                                var bufferEntry = this.threeResources.getEntry(attribute.bufferView);
+                                var bufferEntry = this.binaryLoader.getEntry(attribute.bufferView);
                                 attribute.bufferView = bufferEntry;
-                                attributeEntry = this.threeResources.getEntry(attributeID);
+                                attributeEntry = this.binaryLoader.getEntry(attributeID);
 
                             } else {
                                 attribute = attributeEntry.object;
@@ -448,7 +448,7 @@
 
                             var attribContext = new VertexAttributeContext(attribute, semantic, geometry);
 
-                            var alreadyProcessedAttribute = this.threeResources.binaryManager.getResource(attribute, vertexAttributeDelegate, attribContext);
+                            var alreadyProcessedAttribute = this.binaryLoader.binaryManager.getResource(attribute, vertexAttributeDelegate, attribContext);
                             /*if(alreadyProcessedAttribute) {
                                 vertexAttributeDelegate.resourceAvailable(alreadyProcessedAttribute, attribContext);
                             }*/
@@ -468,7 +468,7 @@
 
         buildNodeHirerachy: {
             value: function(nodeEntryId, parentThreeNode) {
-                var nodeEntry = this.threeResources.getEntry(nodeEntryId);
+                var nodeEntry = this.binaryLoader.getEntry(nodeEntryId);
                 var threeNode = nodeEntry.object;
                 parentThreeNode.add(threeNode);
 
@@ -509,7 +509,7 @@
                 var threeNode = new THREE.Object3D();
                 threeNode.name = description.name;
 
-                this.threeResources.setEntry(entryID, threeNode, description);
+                this.binaryLoader.setEntry(entryID, threeNode, description);
 
                 var m = description.matrix;
                 if(m) {
@@ -526,7 +526,7 @@
                 //FIXME: decision needs to be made between these 2 ways, probably meshes will be discarded.
                 var meshEntry;
                 if (description.mesh) {
-                    meshEntry = this.threeResources.getEntry(description.mesh);
+                    meshEntry = this.binaryLoader.getEntry(description.mesh);
                     meshEntry.object.onComplete(function(mesh) {
                         mesh.attachToNode(threeNode);
                     });
@@ -534,7 +534,7 @@
 
                 if (description.meshes) {
                     description.meshes.forEach( function(meshID) {
-                        meshEntry = this.threeResources.getEntry(meshID);
+                        meshEntry = this.binaryLoader.getEntry(meshID);
                         meshEntry.object.onComplete(function(mesh) {
                             mesh.attachToNode(threeNode);
                         });
@@ -542,7 +542,7 @@
                 }
 
                 /*if (description.camera) {
-                    var cameraEntry = this.threeResources.getEntry(description.camera);
+                    var cameraEntry = this.binaryLoader.getEntry(description.camera);
                     node.cameras.push(cameraEntry.entry);
                 }*/
 
@@ -594,4 +594,4 @@
     return {
         glTFLoader: THREE.glTFLoader
     };
-})(WebGLTFLoader, THREE.glTFBinaryLoader);
+})(WebGLTFLoader, WebGLTFBinaryLoader);

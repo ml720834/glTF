@@ -41,7 +41,7 @@ var global = window;
         // Browser globals
         factory(root);
     }
-}(THREE, function (root) {
+}(this, function (root) {
     "use strict";
 
     var ContiguousRequests = Object.create(Object, {
@@ -874,9 +874,9 @@ var global = window;
     });
 
     if(root) {
-        root.glTFBinaryLoader = WebGLTFBinaryLoader;
+        root.WebGLTFBinaryLoader = WebGLTFBinaryLoader;
     }
 
-    return root.glTFBinaryLoader;
+    return root.WebGLTFBinaryLoader;
 
 }));
