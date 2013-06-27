@@ -287,6 +287,13 @@
         this._entries = {};
     };
 
+    ThreeLoadDelegate = function() {
+    }
+    
+    ThreeLoadDelegate.prototype.loadCompleted = function(callback, obj) {
+    	callback.call(obj);
+    }
+    
     // Loader
 
     var ThreeWebGLTFLoader = Object.create(WebGLTFLoader, {
@@ -495,9 +502,9 @@
                     this.buildNodeHirerachy(nodeUID, userInfo.rootObj);
                 }, this);
 
-                /*if (this.delegate) {
-                    this.delegate.loadCompleted(scene);
-                }*/
+                if (this.delegate) {
+                    this.delegate.loadCompleted(userInfo.callback, userInfo.rootObj);
+                }
 
                 return true;
             }
@@ -551,7 +558,7 @@
         },
 
         _delegate: {
-            value: null,
+            value: new ThreeLoadDelegate,
             writable: true
         },
 

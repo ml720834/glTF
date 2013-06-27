@@ -106,30 +106,31 @@
                     var objSrc = "duck/duck.json";
                     // var objSrc = "../../model/duck/duck.json";
                     var rootObj = loader.load( objSrc, function(object) {
-                        // To delay adding the collada data to the scene until it's fully loaded, attach object to the scene here instead of using the return value
+
+                        // For the car
+                        /*camera.position.y = -250;
+                        rootObj.position.x = -200;
+                        rootObj.position.y = -100;*/
+
+                        // For the wine rack
+                        /*camera.position.y = -120;
+                        rootObj.position.x = -60;
+                        rootObj.position.z = -20;*/
+
+                        // For the duck
+                        camera.position.set(0, 3, 10);
+                        rootObj.scale.set(.01, .01, .01);
+//                        rootObj.position.z = -80;
+//                       rootObj.rotation.x = Math.PI * 0.5;
+//                        rootObj.rotation.y = Math.PI * -0.5;
+                        ground.position.z = -70;
+                        ground.rotation.x = -Math.PI / 2;
+                        
+                        rootObj.castShadow = true;
+
+                        scene.add( rootObj );
+
                     });
-
-                    // For the car
-                    /*camera.position.y = -250;
-                    rootObj.position.x = -200;
-                    rootObj.position.y = -100;*/
-
-                    // For the wine rack
-                    /*camera.position.y = -120;
-                    rootObj.position.x = -60;
-                    rootObj.position.z = -20;*/
-
-                    // For the duck
-                    camera.position.set(0, 3, 10);
-                    rootObj.scale.set(.01, .01, .01);
-//                    rootObj.position.z = -80;
-//                   rootObj.rotation.x = Math.PI * 0.5;
-//                    rootObj.rotation.y = Math.PI * -0.5;
-                    ground.position.z = -70;
-                    ground.rotation.x = -Math.PI / 2;
-                    
-                    rootObj.castShadow = true;
-                    scene.add( rootObj );
 
             		orbitControls = new THREE.OrbitControls(camera, renderer.domElement);
                     document.addEventListener( 'mousemove', onDocumentMouseMove, false );
