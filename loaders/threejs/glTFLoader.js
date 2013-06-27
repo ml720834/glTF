@@ -25,7 +25,7 @@
 // THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-(function(WebGLTFLoader, ResourceManager) {
+(function(WebGLTFLoader, BinaryLoader) {
 
     // Utilities
 
@@ -187,7 +187,7 @@
             geometry.uvs = [];
             floatArray = new Float32Array(glResource, 0, attribute.count * componentsPerElementForGLType(attribute.type));
             for(i = 0, l = floatArray.length; i < l; i += 2) {
-                geometry.uvs.push( new THREE.UV( floatArray[i], 1.0 - floatArray[i+1] ) );
+                geometry.uvs.push( new THREE.Vector2( floatArray[i], 1.0 - floatArray[i+1] ) );
             }
         }
         geometry.loadedAttributes++;
@@ -258,15 +258,15 @@
         this.description = description;
     };
 
-    var ThreeResourceManager = function() {
+    var ThreeBinaryLoader = function() {
         this._entries = {};
-        this.binaryManager = Object.create(ResourceManager);
+        this.binaryManager = Object.create(BinaryLoader);
         this.binaryManager.init();
         this.binaryManager.maxConcurrentRequests = 4;
         this.binaryManager.bytesLimit = 1024 * 1024;
     };
 
-    ThreeResourceManager.prototype.setEntry = function(entryID, object, description) {
+    ThreeBinaryLoader.prototype.setEntry = function(entryID, object, description) {
         if (!entryID) {
             console.error("No EntryID provided, cannot store", description);
             return;
@@ -279,11 +279,11 @@
         this._entries[entryID] = new ThreeEntry(entryID, object, description );
     };
     
-    ThreeResourceManager.prototype.getEntry = function(entryID) {
+    ThreeBinaryLoader.prototype.getEntry = function(entryID) {
         return this._entries[entryID];
     };
 
-    ThreeResourceManager.prototype.clearEntries = function() {
+    ThreeBinaryLoader.prototype.clearEntries = function() {
         this._entries = {};
     };
 
@@ -294,7 +294,7 @@
         load: {
             enumerable: true,
             value: function(userInfo, options) {
-                this.threeResources = new ThreeResourceManager();
+                this.threeResources = new ThreeBinaryLoader();
                 WebGLTFLoader.load.call(this, userInfo, options);
             }
         },
@@ -594,4 +594,4 @@
     return {
         glTFLoader: THREE.glTFLoader
     };
-})(WebGLTFLoader, ResourceManager);
+})(WebGLTFLoader, THREE.glTFBinaryLoader);
