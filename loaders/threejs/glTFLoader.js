@@ -66,9 +66,9 @@
 
     // Geometry processing
 
-    var ThreeWebGLClassicGeometry = function() {
-        THREE.Geometry.call( this );
+    var ClassicGeometry = function() {
 
+    	this.geometry = new THREE.Geometry;
         this.totalAttributes = 0;
         this.loadedAttributes = 0;
         this.indicesLoaded = false;
@@ -76,25 +76,24 @@
 
         this.onload = null;
 
-        this.normals = null;
         this.uvs = null;
         this.indexArray = null;
     };
 
-    ThreeWebGLClassicGeometry.prototype = new THREE.Geometry();
-    ThreeWebGLClassicGeometry.prototype.constructor = ThreeWebGLClassicGeometry;
+    ClassicGeometry.prototype.constructor = ClassicGeometry;
 
-    ThreeWebGLClassicGeometry.prototype.checkFinished = function() {
+    ClassicGeometry.prototype.checkFinished = function() {
         if(this.indexArray && this.loadedAttributes === this.totalAttributes) {
             // Build indexed mesh
+            var geometry = this.geometry;
+            var normals = geometry.normals;
             var indexArray = this.indexArray;
-            var normals = this.normals;
             var uvs = this.uvs;
             var a, b, c;
             var i, l;
             var faceNormals = null;
             var faceTexcoords = null;
-
+            
             for(i = 0, l = this.indexArray.length; i < l; i += 3) {
                 a = indexArray[i];
                 b = indexArray[i+1];
@@ -102,16 +101,16 @@
                 if(normals) {
                     faceNormals = [normals[a], normals[b], normals[c]];
                 }
-                this.faces.push( new THREE.Face3( a, b, c, faceNormals, null, null ) );
+                geometry.faces.push( new THREE.Face3( a, b, c, faceNormals, null, null ) );
                 if(uvs) {
-                    this.faceVertexUvs[0].push([ uvs[a], uvs[b], uvs[c] ]);
+                    geometry.faceVertexUvs[0].push([ uvs[a], uvs[b], uvs[c] ]);
                 }
             }
 
             // Allow Three.js to calculate some values for us
-            this.computeCentroids();
+            geometry.computeCentroids();
             if(!normals) {
-                this.computeFaceNormals();
+                geometry.computeFaceNormals();
             }
 
             this.finished = true;
@@ -164,7 +163,7 @@
 
 
     VertexAttributeDelegate.prototype.resourceAvailable = function(glResource, ctx) {
-        var geometry = ctx.geometry;
+        var geom = ctx.geometry;
         var attribute = ctx.attribute;
         var semantic = ctx.semantic;
         var floatArray;
@@ -175,23 +174,23 @@
             // TODO: Should be easy to take strides into account here
             floatArray = new Float32Array(glResource, 0, attribute.count * componentsPerElementForGLType(attribute.type));
             for(i = 0, l = floatArray.length; i < l; i += 3) {
-                geometry.vertices.push( new THREE.Vector3( floatArray[i], floatArray[i+1], floatArray[i+2] ) );
+                geom.geometry.vertices.push( new THREE.Vector3( floatArray[i], floatArray[i+1], floatArray[i+2] ) );
             }
         } else if(semantic == "NORMAL") {
-            geometry.normals = [];
+            geom.geometry.normals = [];
             floatArray = new Float32Array(glResource, 0, attribute.count * componentsPerElementForGLType(attribute.type));
             for(i = 0, l = floatArray.length; i < l; i += 3) {
-                geometry.normals.push( new THREE.Vector3( floatArray[i], floatArray[i+1], floatArray[i+2] ) );
+                geom.geometry.normals.push( new THREE.Vector3( floatArray[i], floatArray[i+1], floatArray[i+2] ) );
             }
         } else if ((semantic == "TEXCOORD_0") || (semantic == "TEXCOORD" )) {
-            geometry.uvs = [];
+        	geom.uvs = [];
             floatArray = new Float32Array(glResource, 0, attribute.count * componentsPerElementForGLType(attribute.type));
             for(i = 0, l = floatArray.length; i < l; i += 2) {
-                geometry.uvs.push( new THREE.Vector2( floatArray[i], 1.0 - floatArray[i+1] ) );
+                geom.uvs.push( new THREE.Vector2( floatArray[i], 1.0 - floatArray[i+1] ) );
             }
         }
-        geometry.loadedAttributes++;
-        geometry.checkFinished();
+        geom.loadedAttributes++;
+        geom.checkFinished();
         return true;
     };
 
@@ -203,13 +202,13 @@
         this.geometry = geometry;
     };
 
-    var ThreeWebGLMesh = function() {
+    var Mesh = function() {
         this.primitives = [];
         this.loadedGeometry = 0;
         this.onCompleteCallbacks = [];
     };
 
-    ThreeWebGLMesh.prototype.addPrimitive = function(geometry, material) {
+    Mesh.prototype.addPrimitive = function(geometry, material) {
         var self = this;
         geometry.onload = function() {
             self.loadedGeometry++;
@@ -222,12 +221,12 @@
         });
     };
 
-    ThreeWebGLMesh.prototype.onComplete = function(callback) {
+    Mesh.prototype.onComplete = function(callback) {
         this.onCompleteCallbacks.push(callback);
         this.checkComplete();
     };
 
-    ThreeWebGLMesh.prototype.checkComplete = function() {
+    Mesh.prototype.checkComplete = function() {
         var self = this;
         if(this.onCompleteCallbacks.length && this.primitives.length == this.loadedGeometry) {
             this.onCompleteCallbacks.forEach(function(callback) {
@@ -237,14 +236,14 @@
         }
     };
 
-    ThreeWebGLMesh.prototype.attachToNode = function(threeNode) {
+    Mesh.prototype.attachToNode = function(threeNode) {
         // Assumes that the geometry is complete
         this.primitives.forEach(function(primitive) {
             /*if(!primitive.mesh) {
                 primitive.mesh = new THREE.Mesh(primitive.geometry, primitive.material);
             }*/
-            var threeMesh = new THREE.Mesh(primitive.geometry, primitive.material);
-            threeMesh.doubleSided = false;
+            var threeMesh = new THREE.Mesh(primitive.geometry.geometry, primitive.material);
+            primitive.material.side = THREE.FrontSide;
             threeMesh.castShadow = true;
             threeNode.add(threeMesh);
         });
@@ -296,7 +295,7 @@
     
     // Loader
 
-    var ThreeWebGLTFLoader = Object.create(WebGLTFLoader, {
+    var ThreeGLTFLoader = Object.create(WebGLTFLoader, {
 
         load: {
             enumerable: true,
@@ -394,7 +393,7 @@
 
         handleMesh: {
             value: function(entryID, description, userInfo) {
-                var mesh = new ThreeWebGLMesh();
+                var mesh = new Mesh();
                 this.resources.setEntry(entryID, mesh, description);
                 var primitivesDescription = description.primitives;
                 if (!primitivesDescription) {
@@ -408,7 +407,7 @@
                     
                     if (primitiveDescription.primitive === "TRIANGLES") {
 
-                        var geometry = new ThreeWebGLClassicGeometry();
+                        var geometry = new ClassicGeometry();
                         var materialEntry = this.resources.getEntry(primitiveDescription.material);
 
                         mesh.addPrimitive(geometry, materialEntry.object);
@@ -576,7 +575,7 @@
 
     // Loader
 
-    var ThreeWebGLContext = function(rootObj, callback) {
+    var Context = function(rootObj, callback) {
         this.rootObj = rootObj;
         this.callback = callback;
     };
@@ -591,9 +590,9 @@
     THREE.glTFLoader.prototype.load = function( url, callback ) {
         var rootObj = new THREE.Object3D();
 
-        var loader = Object.create(ThreeWebGLTFLoader);
+        var loader = Object.create(ThreeGLTFLoader);
             loader.initWithPath(url);
-            loader.load(new ThreeWebGLContext(rootObj, callback) /* userInfo */, null /* options */);
+            loader.load(new Context(rootObj, callback) /* userInfo */, null /* options */);
 
         return rootObj;
     };
