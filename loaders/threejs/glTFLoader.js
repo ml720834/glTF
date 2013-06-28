@@ -25,7 +25,8 @@
 // THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-(function(WebGLTFLoader, BinaryLoader) {
+THREE.glTFLoader = function ( context, showStatus ) {
+    THREE.Loader.call( this, showStatus );
 
     // Utilities
 
@@ -259,7 +260,7 @@
 
     var ThreeResources = function() {
         this._entries = {};
-        this.binaryLoader = Object.create(BinaryLoader);
+        this.binaryLoader = Object.create(WebGLTFBinaryLoader);
         this.binaryLoader.init();
         this.binaryLoader.maxConcurrentRequests = 4;
         this.binaryLoader.bytesLimit = 1024 * 1024;
@@ -580,14 +581,8 @@
         this.callback = callback;
     };
 
-    THREE.glTFLoader = function ( context, showStatus ) {
-        THREE.Loader.call( this, showStatus );
-    };
-
-    THREE.glTFLoader.prototype = new THREE.Loader();
-    THREE.glTFLoader.prototype.constructor = THREE.glTFLoader;
-
-    THREE.glTFLoader.prototype.load = function( url, callback ) {
+    return {
+    	load : function( url, callback ) {
         var rootObj = new THREE.Object3D();
 
         var loader = Object.create(ThreeGLTFLoader);
@@ -595,9 +590,10 @@
             loader.load(new Context(rootObj, callback) /* userInfo */, null /* options */);
 
         return rootObj;
+    	}
     };
+}
 
-    return {
-        glTFLoader: THREE.glTFLoader
-    };
-})(WebGLTFLoader, WebGLTFBinaryLoader);
+THREE.glTFLoader.prototype = new THREE.Loader();
+THREE.glTFLoader.prototype.constructor = THREE.glTFLoader;
+
