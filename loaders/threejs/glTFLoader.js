@@ -583,13 +583,13 @@ THREE.glTFLoader = function ( context, showStatus ) {
 
     return {
     	load : function( url, callback ) {
-        var rootObj = new THREE.Object3D();
-
-        var loader = Object.create(ThreeGLTFLoader);
-            loader.initWithPath(url);
-            loader.load(new Context(rootObj, callback) /* userInfo */, null /* options */);
-
-        return rootObj;
+	        var rootObj = new THREE.Object3D();
+	
+	        var loader = Object.create(ThreeGLTFLoader);
+	            loader.initWithPath(url);
+	            loader.load(new Context(rootObj, callback) /* userInfo */, null /* options */);
+	
+	        return rootObj;
     	}
     };
 }
