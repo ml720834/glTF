@@ -737,132 +737,20 @@ var global = window;
                                         "kind" : "single-part" }, null);
             }
         },
-
-        //TODO: move this in the renderer, to do so, add dynamic handler to the resource manager.
-        shaderDelegate: {
-            value: {
-                handleError: function(errorCode, info) {
-                    console.log("ERROR:shaderDelegate:"+errorCode+" :"+info);
-                },
-
-                convert: function (resource, ctx) {
-                    return resource;
-                },
-
-                resourceAvailable: function (resource, ctx) {
-                    //FIXME: ...
-                    ctx.sources[ctx.stage] = resource;
-                    var self = this;
-                    if (ctx.sources["x-shader/x-fragment"] && ctx.sources["x-shader/x-vertex"]) {
-                        var delegate = ctx.programCtx.delegate;
-                        var convertedResource = delegate.convert(ctx.sources, ctx.programCtx.ctx);
-                        ctx.programCtx.resourceManager._storeResource(ctx.programCtx.id, convertedResource);
-                        delegate.resourceAvailable(convertedResource, ctx.programCtx.ctx);
-                    }
-                }
-            }
-        },
-
-        _handleProgramLoading: {
-            value: function(program, delegate, ctx) {
-                var programCtx = { "delegate" : delegate, "ctx"  : ctx, "resourceManager" : this, "id" : program.id };
-
-                var sources = {};
-                var fsCtx = { stage: "x-shader/x-fragment", "sources" : sources,  "programCtx" : programCtx };
-                var vsCtx = { stage: "x-shader/x-vertex", "sources" : sources,  "programCtx" : programCtx };
-
-                this.getResource(program.description["x-shader/x-fragment"], this.shaderDelegate, fsCtx);
-                this.getResource(program.description["x-shader/x-vertex"], this.shaderDelegate, vsCtx);
-            }
-        },
-
-        _handleShaderLoading: {
-            value: function(shader, delegate, ctx) {
-                this._handleRequest({   "id":shader.id,
-                                            "type" : "text",
-                                            "path" : shader.description.path,
-                                            "delegate" : delegate,
-                                            "ctx" : ctx,
-                                            "kind" : "single-part" }, null);
-            }
-        },
-
-        _handleImageLoading: {
-            value: function(resource, textureLoadedCallback, ctx) {
-                //TODO: unify with binaries
-                var resourceStatus = this._resourcesStatus[resource.id];
-                var status = null;
-                if (resourceStatus) {
-                    if (resourceStatus.status === "loading" )
-                        return;
-                }
-                this._resourcesStatus[resource.id] = { status: "loading" };
-                var self = this;
-
-                if (resource.description.path) {
-                    var imageObject = new Image();  
-                    imageObject.onload = function() { 
-                        delete self._resourcesStatus[resource.id];
-                        self._storeResource(resource.id, imageObject);
-                        textureLoadedCallback(imageObject, resource.id, ctx); 
-                    }  
-                    imageObject.src = resource.description.path;  
-                } else if (resource.description.image) {
-                    textureLoadedCallback(resource.description.image, resource.id, ctx);                  
-                }
-            }
-        },
-
-        _handleSampler2DLoading: {
-            value: function(resource, delegate, ctx) {
-                //TODO: unify with binaries
-                var resourceStatus = this._resourcesStatus[resource.id];
-                var status = null;
-                if (resourceStatus) {
-                    if (resourceStatus.status === "loading" )
-                        return;
-                }
-                this._resourcesStatus[resource.id] = { status: "loading" };
-
-                var self = this;
-                if (resource.description.image) {
-                    this._handleImageLoading(resource.description.image, 
-                    function(image, id, ctx) {
-                        var gl = ctx;                            
-                        var convertedResource = delegate.convert(resource, image);
-
-                        delete self._resourcesStatus[resource.id];
-
-                        self._storeResource(resource.id, convertedResource);
-                        delegate.resourceAvailable(convertedResource, gl);
-                        self.fireResourceAvailable.call(self, resource.id);
-                    }, ctx);
-                }
-            }
-        },
         
-        getResource: {
-                value: function(resource, delegate, ctx) {
-
-                var managedResource = this._getResource(resource.id);
-                if (managedResource) {
-                    return managedResource;
-                }
-
-                if (resource.type === "program") {
-                    this._handleProgramLoading(resource, delegate, ctx);
-                } else if (resource.type === "shader") {
-                    this._handleShaderLoading(resource, delegate, ctx);
-                } else if (resource.type === "image") {
-                    this._handleImageLoading(resource, delegate, ctx);
-                } else if (resource.type === "SAMPLER_2D") {
-                    this._handleSampler2DLoading(resource, delegate, ctx);
-                } else {
-                    this._handleWrappedBufferViewResourceLoading(resource, delegate, ctx);
-                }
-
-                return null;
-            }
+        getBuffer: {
+        	
+	            value: function(wrappedBufferView, delegate, ctx) {
+	
+	            var savedBuffer = this._getResource(wrappedBufferView.id);
+	            if (savedBuffer) {
+	                return savedBuffer;
+	            } else {
+	                this._handleWrappedBufferViewResourceLoading(wrappedBufferView, delegate, ctx);
+	            }
+	
+	            return null;
+	        }
         },
 
         removeAllResources: {

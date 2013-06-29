@@ -260,10 +260,6 @@ THREE.glTFLoader = function ( context, showStatus ) {
 
     var ThreeResources = function() {
         this._entries = {};
-        this.binaryLoader = Object.create(WebGLTFBinaryLoader);
-        this.binaryLoader.init();
-        this.binaryLoader.maxConcurrentRequests = 4;
-        this.binaryLoader.bytesLimit = 1024 * 1024;
     };
 
     ThreeResources.prototype.setEntry = function(entryID, object, description) {
@@ -302,6 +298,10 @@ THREE.glTFLoader = function ( context, showStatus ) {
             enumerable: true,
             value: function(userInfo, options) {
                 this.resources = new ThreeResources();
+                this.binaryLoader = Object.create(WebGLTFBinaryLoader);
+                this.binaryLoader.init();
+                this.binaryLoader.maxConcurrentRequests = 4;
+                this.binaryLoader.bytesLimit = 1024 * 1024;
                 WebGLTFLoader.load.call(this, userInfo, options);
             }
         },
@@ -426,7 +426,7 @@ THREE.glTFLoader = function ( context, showStatus ) {
                         primitiveDescription.indices = indicesEntry.object;
 
                         var indicesContext = new IndicesContext(primitiveDescription.indices, geometry);
-                        var alreadyProcessedIndices = this.resources.binaryLoader.getResource(primitiveDescription.indices, indicesDelegate, indicesContext);
+                        var alreadyProcessedIndices = this.binaryLoader.getBuffer(primitiveDescription.indices, indicesDelegate, indicesContext);
                         /*if(alreadyProcessedIndices) {
                             indicesDelegate.resourceAvailable(alreadyProcessedIndices, indicesContext);
                         }*/
@@ -455,7 +455,7 @@ THREE.glTFLoader = function ( context, showStatus ) {
 
                             var attribContext = new VertexAttributeContext(attribute, semantic, geometry);
 
-                            var alreadyProcessedAttribute = this.resources.binaryLoader.getResource(attribute, vertexAttributeDelegate, attribContext);
+                            var alreadyProcessedAttribute = this.binaryLoader.getBuffer(attribute, vertexAttributeDelegate, attribContext);
                             /*if(alreadyProcessedAttribute) {
                                 vertexAttributeDelegate.resourceAvailable(alreadyProcessedAttribute, attribContext);
                             }*/
