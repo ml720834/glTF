@@ -134,12 +134,22 @@
 
             		orbitControls = new THREE.OrbitControls(camera, renderer.domElement);
                     document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+    				window.addEventListener( 'resize', onWindowResize, false );
                 }
 
                 function onDocumentMouseMove( event ) {
                     mouseX = ( event.clientX - windowHalfX ) / 2;
                     mouseY = ( event.clientY - windowHalfY ) / 2;
                 }
+                
+				function onWindowResize() {
+					
+					camera.aspect = window.innerWidth / window.innerHeight;
+					camera.updateProjectionMatrix();
+	
+					renderer.setSize( window.innerWidth, window.innerHeight );
+	
+				}
 
                 function animate() {
                     requestAnimationFrame( animate );
@@ -155,6 +165,8 @@
 
                     renderer.render( scene, camera );
                 }
+
+                
             }
 
             onload();
