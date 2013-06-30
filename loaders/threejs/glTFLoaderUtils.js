@@ -14,6 +14,8 @@ THREE.GLTFLoaderUtils = Object.create(Object, {
     ARRAY_BUFFER: { value: "ArrayBuffer" },
 
     _streams : { value:{}, writable: true },
+
+    _streamsStatus: { value: {}, writable: true },
     
     _resources: { value: {}, writable: true },
 
@@ -51,46 +53,36 @@ THREE.GLTFLoaderUtils = Object.create(Object, {
         }
     },
 
-    _loadResource: {
-        value: function(request, delegate) {
+    _loadStream: {
+        value: function(path, type, delegate) {
             var self = this;
-            var path = request.path;
-            var type = request.type;
-            var path = request.path;
 
             if (!type) {
-                delegate.handleError(GLTFLoaderUtils.INVALID_TYPE, null);
+                delegate.handleError(THREE.GLTFLoaderUtils.INVALID_TYPE, null);
                 return;
             }
 
             if (!path) {
-                delegate.handleError(GLTFLoaderUtils.INVALID_PATH);
+                delegate.handleError(THREE.GLTFLoaderUtils.INVALID_PATH);
                 return;
             }
 
             var xhr = new XMLHttpRequest();
             xhr.open('GET', path, true);
             xhr.responseType = (type === this.ARRAY_BUFFER) ? "arraybuffer" : "text";
-            if (request.range) {
-                var header = "bytes=" + request.range[0] + "-" + (request.range[1] - 1);
-                xhr.setRequestHeader("Range", header);
-            }
+
             //if this is not specified, 1 "big blob" scenes fails to load.
             xhr.setRequestHeader("If-Modified-Since", "Sat, 01 Jan 1970 00:00:00 GMT");
             xhr.onload = function(e) {
-                if ((this.status == 200) || (this.status == 206)) {
+                if ((xhr.status == 200) || (xhr.status == 206)) {
 
-                    delegate.resourceAvailable(self, request, xhr.response);
+                    delegate.streamAvailable(path, xhr.response);
 
                 } else {
-                    delegate.handleError(GLTFLoaderUtils.XMLHTTPREQUEST_STATUS_ERROR, this.status);
+                    delegate.handleError(THREE.GLTFLoaderUtils.XMLHTTPREQUEST_STATUS_ERROR, this.status);
                 }
             };
             xhr.send(null);
-            var resourceStatus = this._resourcesStatus[request.id];
-            if (resourceStatus) {
-                resourceStatus.xhr = xhr;
-            }
         }
     },
 
@@ -100,36 +92,44 @@ THREE.GLTFLoaderUtils = Object.create(Object, {
     _handleRequest: {
         value: function(request) {
             var resourceStatus = this._resourcesStatus[request.id];
-            var node = null;
-            var status = null;
-            if (resourceStatus) {
-                if (resourceStatus.status === "loading" )
-                    return;
-                node = resourceStatus.node;
-                status = resourceStatus.status;
-            }
+            if (resourceStatus && resourceStatus.status === "loading" )
+                return;
 
+            this._resourcesStatus[request.id] =  { status : "loading"};
+
+            var streamStatus = this._streamsStatus[request.path];
+            if (streamStatus && streamStatus.status === "loading" )
+            {
+            	streamStatus.requests.push(request);
+                return;
+            }
+            
+            this._streamsStatus[request.path] = { status : "loading", requests : [request] };
+    		
             var self = this;
             var processResourceDelegate = {};
 
-            this._resourcesStatus[request.id] =  { "status": "loading"};
+            processResourceDelegate.streamAvailable = function(path, res_) {
+            	var streamStatus = self._streamsStatus[path];
+            	var requests = streamStatus.requests;
+                requests.forEach( function(req_) {
+                    var subArray = res_.slice(req_.range[0], req_.range[1]);
+                    var convertedResource = req_.delegate.convert(subArray, req_.ctx);
+                    self._storeResource(req_.id, convertedResource);
+                    req_.delegate.resourceAvailable(convertedResource, req_.ctx);
+                    delete self._resourcesStatus[req_.id];
 
-            processResourceDelegate.resourceAvailable = function(resourceManager, req_, res_) {
-                // ask the delegate to convert the resource, typically here, the delegate is the renderer and will produce a webGL array buffer
-                // this could get more general and flexible by making an unique key with the id from the resource + the converted type (day "ARRAY_BUFFER" or "TEXTURE"..)
-                //, but as of now, this fexibility does not seem necessary.
-                var convertedResource = req_.delegate.convert(res_, req_.ctx);
-                self._storeResource(req_.id, convertedResource);
-                req_.delegate.resourceAvailable(convertedResource, req_.ctx);
+                }, this);
+            	
+                delete self._streamsStatus[path];
 
-                delete self._resourcesStatus[req_.id];
             };
 
             processResourceDelegate.handleError = function(errorCode, info) {
                 request.delegate.handleError(errorCode, info);
             }
 
-            this._loadResource(request, processResourceDelegate);
+            this._loadStream(request.path, request.type, processResourceDelegate);
         }
     },
 
