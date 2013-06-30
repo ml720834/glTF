@@ -300,7 +300,6 @@ THREE.glTFLoader = function ( context, showStatus ) {
                 this.resources = new ThreeResources();
                 this.binaryLoader = Object.create(WebGLTFBinaryLoader);
                 this.binaryLoader.init();
-                this.binaryLoader.maxConcurrentRequests = 4;
                 this.binaryLoader.bytesLimit = 1024 * 1024;
                 WebGLTFLoader.load.call(this, userInfo, options);
             }
