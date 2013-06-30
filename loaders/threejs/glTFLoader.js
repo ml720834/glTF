@@ -1,28 +1,6 @@
-// Copyright (c) 2012, Motorola Mobility, Inc.
-// All rights reserved.
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are met:
-//
-//  * Redistributions of source code must retain the above copyright
-//    notice, this list of conditions and the following disclaimer.
-//  * Redistributions in binary form must reproduce the above copyright
-//    notice, this list of conditions and the following disclaimer in the
-//    documentation and/or other materials provided with the distribution.
-//  * Neither the name of the Motorola Mobility, Inc. nor the names of its
-//    contributors may be used to endorse or promote products derived from this
-//    software without specific prior written permission.
-//
-//  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-// ARE DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
-// DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-// ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
-// THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+/**
+ * @author Tony Parisi / http://www.tonyparisi.com/
+ */
 
 
 THREE.glTFLoader = function ( context, showStatus ) {
@@ -252,17 +230,17 @@ THREE.glTFLoader = function ( context, showStatus ) {
 
     // Resource management
 
-    var ThreeEntry = function(entryID, object, description) {
+    var ResourceEntry = function(entryID, object, description) {
         this.entryID = entryID;
         this.object = object;
         this.description = description;
     };
 
-    var ThreeResources = function() {
+    var Resources = function() {
         this._entries = {};
     };
 
-    ThreeResources.prototype.setEntry = function(entryID, object, description) {
+    Resources.prototype.setEntry = function(entryID, object, description) {
         if (!entryID) {
             console.error("No EntryID provided, cannot store", description);
             return;
@@ -272,21 +250,21 @@ THREE.glTFLoader = function ( context, showStatus ) {
             console.warn("entry["+entryID+"] is being overwritten");
         }
     
-        this._entries[entryID] = new ThreeEntry(entryID, object, description );
+        this._entries[entryID] = new ResourceEntry(entryID, object, description );
     };
     
-    ThreeResources.prototype.getEntry = function(entryID) {
+    Resources.prototype.getEntry = function(entryID) {
         return this._entries[entryID];
     };
 
-    ThreeResources.prototype.clearEntries = function() {
+    Resources.prototype.clearEntries = function() {
         this._entries = {};
     };
 
-    ThreeLoadDelegate = function() {
+    LoadDelegate = function() {
     }
     
-    ThreeLoadDelegate.prototype.loadCompleted = function(callback, obj) {
+    LoadDelegate.prototype.loadCompleted = function(callback, obj) {
     	callback.call(obj);
     }
     
@@ -297,10 +275,7 @@ THREE.glTFLoader = function ( context, showStatus ) {
         load: {
             enumerable: true,
             value: function(userInfo, options) {
-                this.resources = new ThreeResources();
-                this.binaryLoader = Object.create(WebGLTFBinaryLoader);
-                this.binaryLoader.init();
-                this.binaryLoader.bytesLimit = 1024 * 1024;
+                this.resources = new Resources();
                 WebGLTFLoader.load.call(this, userInfo, options);
             }
         },
@@ -425,7 +400,7 @@ THREE.glTFLoader = function ( context, showStatus ) {
                         primitiveDescription.indices = indicesEntry.object;
 
                         var indicesContext = new IndicesContext(primitiveDescription.indices, geometry);
-                        var alreadyProcessedIndices = this.binaryLoader.getBuffer(primitiveDescription.indices, indicesDelegate, indicesContext);
+                        var alreadyProcessedIndices = THREE.GLTFLoaderUtils.getBuffer(primitiveDescription.indices, indicesDelegate, indicesContext);
                         /*if(alreadyProcessedIndices) {
                             indicesDelegate.resourceAvailable(alreadyProcessedIndices, indicesContext);
                         }*/
@@ -454,7 +429,7 @@ THREE.glTFLoader = function ( context, showStatus ) {
 
                             var attribContext = new VertexAttributeContext(attribute, semantic, geometry);
 
-                            var alreadyProcessedAttribute = this.binaryLoader.getBuffer(attribute, vertexAttributeDelegate, attribContext);
+                            var alreadyProcessedAttribute = THREE.GLTFLoaderUtils.getBuffer(attribute, vertexAttributeDelegate, attribContext);
                             /*if(alreadyProcessedAttribute) {
                                 vertexAttributeDelegate.resourceAvailable(alreadyProcessedAttribute, attribContext);
                             }*/
@@ -557,7 +532,7 @@ THREE.glTFLoader = function ( context, showStatus ) {
         },
 
         _delegate: {
-            value: new ThreeLoadDelegate,
+            value: new LoadDelegate,
             writable: true
         },
 

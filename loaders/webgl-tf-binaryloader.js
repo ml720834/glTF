@@ -55,24 +55,12 @@ var global = window;
         // misc constants
         ARRAY_BUFFER: { value: "ArrayBuffer" },
 
+        _streams : { value:null, writable: true },
+        
         _resources: { value: null, writable: true },
 
         _resourcesStatus: { value: null, writable: true },
 
-        _resourcesBeingProcessedCount: { value: 0, writable: true },
-
-        _bytesLimit: { value: 500000, writable: true },
-        
-        bytesLimit: {
-            get: function() {
-                return this._bytesLimit;
-            },
-            set: function(value) {
-                if (this._bytesLimit !== value) {
-                    this._bytesLimit = value;
-                }
-            }
-        },
 
         //manage entries
         _containsResource: {
@@ -86,7 +74,7 @@ var global = window;
             value: function() {
                 this._resources = {};
                 this._resourcesStatus = {};
-                this._resourcesBeingProcessedCount = 0;
+                this._streams = {};
             }
         },
 
@@ -141,7 +129,6 @@ var global = window;
                 xhr.setRequestHeader("If-Modified-Since", "Sat, 01 Jan 1970 00:00:00 GMT");
                 xhr.onload = function(e) {
                     if ((this.status == 200) || (this.status == 206)) {
-                        self._resourcesBeingProcessedCount--;
 
                         delegate.resourceAvailable(self, request, this.response);
 
@@ -157,22 +144,6 @@ var global = window;
             }
         },
 
-        _processNextResource: {
-            value: function(requestTree) {
-                if (requestTree) {
-                    var rootIsLeaf = !requestTree.left && !requestTree.right;
-                    if (rootIsLeaf) {
-                        this._handleRequest(requestTree.content);
-                        return false;
-                    } else {
-                        var min = requestTree.removeMin();
-                        this._handleRequest(min.content);
-                    }
-                }
-                return true;
-            }
-        },
-
         send: { value: 0, writable: true },
         requested: { value: 0, writable: true },
 
@@ -181,7 +152,6 @@ var global = window;
                 var resourceStatus = this._resourcesStatus[request.id];
                 var node = null;
                 var status = null;
-                var requestTree = this.requestTrees ? this.requestTrees[request.path] : null;
                 if (resourceStatus) {
                     if (resourceStatus.status === "loading" )
                         return;
@@ -209,7 +179,6 @@ var global = window;
                     request.delegate.handleError(errorCode, info);
                 }
 
-                self._resourcesBeingProcessedCount++;
                 this._loadResource(request, processResourceDelegate);
             }
         },
@@ -248,8 +217,7 @@ var global = window;
                                         "type" : buffer.description.type,
                                         "path" : buffer.description.path,
                                         "delegate" : delegate,
-                                        "ctx" : ctx,
-                                        "kind" : "single-part" }, null);
+                                        "ctx" : ctx }, null);
             }
         },
         
