@@ -395,7 +395,7 @@ THREE.glTFLoader = function ( context, showStatus ) {
                         var bufferEntry = this.resources.getEntry(indices.description.bufferView);
                         indices.bufferView = bufferEntry;
                         indices.byteOffset = indices.description.byteOffset;
-                        indices.id = primitiveDescription.indices;
+                        indices.id = indices.description.id;
                         var indicesContext = new IndicesContext(indices, geometry);
                         var alreadyProcessedIndices = THREE.GLTFLoaderUtils.getBuffer(indices, indicesDelegate, indicesContext);
                         /*if(alreadyProcessedIndices) {
