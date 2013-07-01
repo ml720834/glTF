@@ -273,28 +273,36 @@ var global = window;
                         categoryState.keys = keys = Object.keys(this.rootDescription[category]);
                     }
 
-                    var type = typeForCategory[category];
-                    var entryID = keys[categoryState.index];
-                    var description = this.getEntryDescription(entryID, type);
-                    if (!description) {
-                        if (this.handleError) {
-                            this.handleError("INCONSISTENCY ERROR: no description found for entry "+entryID);
-                            success = false;
-                            break;
-                        }
-                    } else {
-                        if (typeof description.type === "undefined") {
-                            description.type = type;
-                        }
-
-                        if (methodForType[type]) {
-                            if (methodForType[type].call(this, entryID, description, this._state.userInfo) === false) {
-                                success = false;
-                                break;
-                            }
-                        }
-
+                    if (!keys.length)
+                    {
                         this._stepToNextDescription();
+                    }
+                    else
+                    {
+		                
+		                var type = typeForCategory[category];
+		                var entryID = keys[categoryState.index];
+		                var description = this.getEntryDescription(entryID, type);
+		                if (!description) {
+		                    if (this.handleError) {
+		                        this.handleError("INCONSISTENCY ERROR: no description found for entry "+entryID);
+		                        success = false;
+		                        break;
+		                    }
+		                } else {
+		                    if (typeof description.type === "undefined") {
+		                        description.type = type;
+		                    }
+		
+		                    if (methodForType[type]) {
+		                        if (methodForType[type].call(this, entryID, description, this._state.userInfo) === false) {
+		                            success = false;
+		                            break;
+		                        }
+		                    }
+		
+		                    this._stepToNextDescription();
+		                }
                     }
                 }
 

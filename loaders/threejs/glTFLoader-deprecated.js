@@ -316,16 +316,16 @@ THREE.glTFLoader = function ( context, showStatus ) {
             }
         },
 
-        handleProgram: {
+        handleTechnique: {
             value: function(entryID, description, userInfo) {
-                // No program handling at this time
+                // No technique handling at this time
                 return true;
             }
         },
 
-        handleTechnique: {
+        handleImage: {
             value: function(entryID, description, userInfo) {
-                // No technique handling at this time
+                this.resources.setEntry(entryID, null, description);
                 return true;
             }
         },
@@ -335,28 +335,17 @@ THREE.glTFLoader = function ( context, showStatus ) {
                 //this should be rewritten using the meta datas that actually create the shader.
                 //here we will infer what needs to be pass to Three.js by looking inside the technique parameters.
                 var texturePath = null;
-                var vals = description.instanceTechnique.values;
-                var values = {};
-                var i, len = vals.length;
-                for (i = 0; i < len; i++)
-                {
-                	values[vals[i].parameter] = vals[i];
+                var technique = description.techniques[description.technique];
+                var texture = technique.parameters.diffuse;
+                if (texture) {
+                    var imageEntry = this.resources.getEntry(texture.image);
+                    if (imageEntry) {
+                        texturePath = imageEntry.description.path;
+                    }
                 }
-                
-                var diffuse = values.diffuse;
-                if (diffuse)
-                {
-                	var texture = diffuse.value;
-                    if (texture) {
-                        var imageEntry = this.resources.getEntry(texture.image);
-                        if (imageEntry) {
-                            texturePath = imageEntry.description.path;
-                        }
-                    }                    
-                }
-                
-                var diffuseColor = !texturePath ? diffuse.value : null;
-                var transparency = values.transparency ? values.transparency.value : 1.0;
+
+                var diffuseColor = !texturePath ? technique.parameters.diffuse.value : null;
+                var transparency = technique.parameters.transparency ? technique.parameters.transparency.value : 1.0;
 
                 var material = new THREE.MeshLambertMaterial({
                     color: RgbArraytoHex(diffuseColor),
@@ -366,6 +355,13 @@ THREE.glTFLoader = function ( context, showStatus ) {
 
                 this.resources.setEntry(entryID, material, description);
 
+                return true;
+            }
+        },
+
+        handleLight: {
+            value: function(entryID, description, userInfo) {
+                // No light handling at this time
                 return true;
             }
         },
@@ -391,13 +387,20 @@ THREE.glTFLoader = function ( context, showStatus ) {
 
                         mesh.addPrimitive(geometry, materialEntry.object);
 
-                        var indices = this.resources.getEntry(primitiveDescription.indices);
-                        var bufferEntry = this.resources.getEntry(indices.description.bufferView);
-                        indices.bufferView = bufferEntry;
-                        indices.byteOffset = indices.description.byteOffset;
-                        indices.id = indices.description.id;
-                        var indicesContext = new IndicesContext(indices, geometry);
-                        var alreadyProcessedIndices = THREE.GLTFLoaderUtils.getBuffer(indices, indicesDelegate, indicesContext);
+                        var indicesID = entryID + "_indices"+"_"+i;
+                        var indicesEntry = this.resources.getEntry(indicesID);
+                        if (!indicesEntry) {
+                            indices = primitiveDescription.indices;
+                            indices.id = indicesID;
+                            var bufferEntry = this.resources.getEntry(indices.bufferView);
+                            indices.bufferView = bufferEntry;
+                            this.resources.setEntry(indicesID, indices, indices);
+                            indicesEntry = this.resources.getEntry(indicesID);
+                        }
+                        primitiveDescription.indices = indicesEntry.object;
+
+                        var indicesContext = new IndicesContext(primitiveDescription.indices, geometry);
+                        var alreadyProcessedIndices = THREE.GLTFLoaderUtils.getBuffer(primitiveDescription.indices, indicesDelegate, indicesContext);
                         /*if(alreadyProcessedIndices) {
                             indicesDelegate.resourceAvailable(alreadyProcessedIndices, indicesContext);
                         }*/
@@ -444,9 +447,39 @@ THREE.glTFLoader = function ( context, showStatus ) {
             }
         },
 
-        handleLight: {
+        buildNodeHirerachy: {
+            value: function(nodeEntryId, parentThreeNode) {
+                var nodeEntry = this.resources.getEntry(nodeEntryId);
+                var threeNode = nodeEntry.object;
+                parentThreeNode.add(threeNode);
+
+                var children = nodeEntry.description.children;
+                if (children) {
+                    children.forEach( function(childID) {
+                        this.buildNodeHirerachy(childID, threeNode);
+                    }, this);
+                }
+
+                return threeNode;
+            }
+        },
+
+        handleScene: {
             value: function(entryID, description, userInfo) {
-                // No light handling at this time
+
+                if (!description.nodes) {
+                    console.log("ERROR: invalid file required nodes property is missing from scene");
+                    return false;
+                }
+
+                description.nodes.forEach( function(nodeUID) {
+                    this.buildNodeHirerachy(nodeUID, userInfo.rootObj);
+                }, this);
+
+                if (this.delegate) {
+                    this.delegate.loadCompleted(userInfo.callback, userInfo.rootObj);
+                }
+
                 return true;
             }
         },
@@ -497,75 +530,7 @@ THREE.glTFLoader = function ( context, showStatus ) {
                 return true;
             }
         },
-        
-        buildNodeHirerachy: {
-            value: function(nodeEntryId, parentThreeNode) {
-                var nodeEntry = this.resources.getEntry(nodeEntryId);
-                var threeNode = nodeEntry.object;
-                parentThreeNode.add(threeNode);
 
-                var children = nodeEntry.description.children;
-                if (children) {
-                    children.forEach( function(childID) {
-                        this.buildNodeHirerachy(childID, threeNode);
-                    }, this);
-                }
-
-                return threeNode;
-            }
-        },
-
-        handleScene: {
-            value: function(entryID, description, userInfo) {
-
-                if (!description.nodes) {
-                    console.log("ERROR: invalid file required nodes property is missing from scene");
-                    return false;
-                }
-
-                description.nodes.forEach( function(nodeUID) {
-                    this.buildNodeHirerachy(nodeUID, userInfo.rootObj);
-                }, this);
-
-                if (this.delegate) {
-                    this.delegate.loadCompleted(userInfo.callback, userInfo.rootObj);
-                }
-
-                return true;
-            }
-        },
-
-        handleImage: {
-            value: function(entryID, description, userInfo) {
-                this.resources.setEntry(entryID, null, description);
-                return true;
-            }
-        },
-        
-        handleAnimation: {
-            value: function(entryID, description, userInfo) {
-                // No animation handling at this time
-                return true;
-            }
-        },
-
-        handleIndices: {
-            value: function(entryID, description, userInfo) {
-        		// Save indices entry
-        		description.id = entryID;
-        		this.resources.setEntry(entryID, null, description);
-                return true;
-            }
-        },
-
-        handleAttribute: {
-            value: function(entryID, description, userInfo) {
-	    		// Save attribute entry
-	    		this.resources.setEntry(entryID, null, description);
-                return true;
-            }
-        },
-        
         _delegate: {
             value: new LoadDelegate,
             writable: true
