@@ -393,13 +393,16 @@ THREE.glTFLoader = function ( context, showStatus ) {
 
                         var indices = this.resources.getEntry(primitiveDescription.indices);
                         var bufferEntry = this.resources.getEntry(indices.description.bufferView);
-                        indices.bufferView = bufferEntry;
-                        indices.byteOffset = indices.description.byteOffset;
-                        indices.count = indices.description.count;
-                        indices.id = indices.description.id;
-                        indices.type = indices.description.type;
-                        var indicesContext = new IndicesContext(indices, geometry);
-                        var alreadyProcessedIndices = THREE.GLTFLoaderUtils.getBuffer(indices, indicesDelegate, indicesContext);
+                        var indicesObject = {
+                        		bufferView : bufferEntry,
+                        		byteOffset : indices.description.byteOffset,
+                        		count : indices.description.count,
+                        		id : indices.description.id,
+                        		type : indices.description.type
+                        };
+                        
+                        var indicesContext = new IndicesContext(indicesObject, geometry);
+                        var alreadyProcessedIndices = THREE.GLTFLoaderUtils.getBuffer(indicesObject, indicesDelegate, indicesContext);
                         /*if(alreadyProcessedIndices) {
                             indicesDelegate.resourceAvailable(alreadyProcessedIndices, indicesContext);
                         }*/
@@ -419,19 +422,28 @@ THREE.glTFLoader = function ( context, showStatus ) {
                                 this.resources.setEntry(attributeID, attribute, attribute);
             
                                 var bufferEntry = this.resources.getEntry(attribute.bufferView);
-                                attribute.bufferView = bufferEntry;
                                 attributeEntry = this.resources.getEntry(attributeID);
 
                             } else {
                                 attribute = attributeEntry.object;
                                 attribute.id = attributeID;
                                 var bufferEntry = this.resources.getEntry(attribute.bufferView);
-                                attribute.bufferView = bufferEntry;
                             }
 
-                            var attribContext = new VertexAttributeContext(attribute, semantic, geometry);
+                            var attributeObject = {
+                            		bufferView : bufferEntry,
+                            		byteOffset : attribute.byteOffset,
+                            		byteStride : attribute.byteStride,
+                            		count : attribute.count,
+                            		max : attribute.max,
+                            		min : attribute.min,
+                            		type : attribute.type,
+                            		id : attributeID             
+                            };
+                            
+                            var attribContext = new VertexAttributeContext(attributeObject, semantic, geometry);
 
-                            var alreadyProcessedAttribute = THREE.GLTFLoaderUtils.getBuffer(attribute, vertexAttributeDelegate, attribContext);
+                            var alreadyProcessedAttribute = THREE.GLTFLoaderUtils.getBuffer(attributeObject, vertexAttributeDelegate, attribContext);
                             /*if(alreadyProcessedAttribute) {
                                 vertexAttributeDelegate.resourceAvailable(alreadyProcessedAttribute, attribContext);
                             }*/

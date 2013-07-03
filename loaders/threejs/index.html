@@ -103,8 +103,10 @@
                     //var objSrc = "../../apps/viewer/model/rambler/Rambler.json";
                     //var objSrc = "../../apps/viewer/model/wine/wine.json";
                     //var objSrc = "../../apps/viewer/model/SuperMurdoch/SuperMurdoch.json";
-                    var objSrc = "../../model/duck/duck.json";
                     // var objSrc = "../../model/duck/duck.json";
+                    // var objSrc = "../../model/wine/wine.json";
+                    // var objSrc = "../../model/rambler/rambler.json";
+                    var objSrc = "../../model/SuperMurdoch/SuperMurdoch.json";
                     var rootObj = loader.load( objSrc, function(object) {
 
                         // For the car
@@ -120,9 +122,7 @@
                         // For the duck
                         camera.position.set(0, 3, 10);
                         rootObj.scale.set(.01, .01, .01);
-//                        rootObj.position.z = -80;
-//                       rootObj.rotation.x = Math.PI * 0.5;
-//                        rootObj.rotation.y = Math.PI * -0.5;
+
                         ground.position.z = -70;
                         ground.rotation.x = -Math.PI / 2;
                         
