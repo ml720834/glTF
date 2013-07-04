@@ -326,15 +326,59 @@ THREE.glTFLoader = function ( context, showStatus ) {
         handleTechnique: {
             value: function(entryID, description, userInfo) {
                 // No technique handling at this time
+        		this.resources.setEntry(entryID, null, description);
                 return true;
             }
         },
 
+        threeJSMaterialType : {
+            value: function(technique, params) {
+        	
+        		var materialType = THREE.MeshBasicMaterial;
+        
+        		if (technique && technique.description && technique.description.passes &&
+        				technique.description.passes.defaultPass && technique.description.passes.defaultPass.details &&
+        				technique.description.passes.defaultPass.details.commonProfile)
+        		{
+            		var profile = technique.description.passes.defaultPass.details.commonProfile;
+            		if (profile)
+            		{
+	            		switch (profile.lightingModel)
+	            		{
+	            			case 'Blinn' :
+	            			case 'Phong' :
+	            				materialType = THREE.MeshPhongMaterial;
+	            				break;
+
+	            			case 'Lambert' :
+	            				materialType = THREE.MeshLambertMaterial;
+	            				break;
+	            				
+	            			default :
+	            				materialType = THREE.MeshBasicMaterial;
+	            				break;
+	            		}
+	            		
+	            		if (profile.extras && profile.extras.doubleSided)
+	            		{
+	            			params.side = THREE.DoubleSide;
+	            		}
+            		}
+        		}
+        		
+        		return materialType;
+        		
+        	}
+        },
+        
         handleMaterial: {
             value: function(entryID, description, userInfo) {
                 //this should be rewritten using the meta datas that actually create the shader.
                 //here we will infer what needs to be pass to Three.js by looking inside the technique parameters.
                 var texturePath = null;
+                var technique = this.resources.getEntry(description.instanceTechnique.technique);
+                var materialParams = {};
+                var materialType = this.threeJSMaterialType(technique, materialParams);
                 var vals = description.instanceTechnique.values;
                 var values = {};
                 var i, len = vals.length;
@@ -358,11 +402,11 @@ THREE.glTFLoader = function ( context, showStatus ) {
                 var diffuseColor = !texturePath ? diffuse.value : null;
                 var transparency = values.transparency ? values.transparency.value : 1.0;
 
-                var material = new THREE.MeshLambertMaterial({
-                    color: RgbArraytoHex(diffuseColor),
-                    opacity: transparency,
-                    map: LoadTexture(texturePath)
-                });
+                materialParams.color = RgbArraytoHex(diffuseColor);
+                materialParams.opacity = transparency;
+                materialParams.map = LoadTexture(texturePath);
+                
+                var material = new materialType(materialParams);
 
                 this.resources.setEntry(entryID, material, description);
 

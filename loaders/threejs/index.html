@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
     <head>
-        <title>three.js GLTF Loader</title>
+        <title>three.js glTF Loader</title>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
         <style>
@@ -25,7 +25,7 @@
 
     <body>
         <div id="info">
-        <a href="http://github.com/mrdoob/three.js" target="_blank">three.js</a> - Collada JSON Loader
+        <a href="http://github.com/mrdoob/three.js" target="_blank">three.js</a> - glTF Loader
         </div>
 
         <script src="libs/three.js.r58/three.js"></script>
@@ -100,13 +100,10 @@
 
                     var loader = new THREE.glTFLoader( renderer.context );
 
-                    //var objSrc = "../../apps/viewer/model/rambler/Rambler.json";
-                    //var objSrc = "../../apps/viewer/model/wine/wine.json";
-                    //var objSrc = "../../apps/viewer/model/SuperMurdoch/SuperMurdoch.json";
-                    // var objSrc = "../../model/duck/duck.json";
+                    var objSrc = "../../model/duck/duck.json";
                     // var objSrc = "../../model/wine/wine.json";
                     // var objSrc = "../../model/rambler/rambler.json";
-                    var objSrc = "../../model/SuperMurdoch/SuperMurdoch.json";
+                    // var objSrc = "../../model/SuperMurdoch/SuperMurdoch.json";
                     var rootObj = loader.load( objSrc, function(object) {
 
                         // For the car
