@@ -78,7 +78,7 @@ namespace GLTF
         std::string sharedVerticesBufferID = inputURI.getPathFileBase() + "vertices" + ".bin";
         std::string sharedIndicesBufferID = inputURI.getPathFileBase() + "indices" + ".bin";
         std::string sharedAnimationsBufferID = inputURI.getPathFileBase() + "animations" + ".bin";
-        std::string sharedBufferID = inputURI.getPathFileBase() + ".bin";
+        std::string sharedBufferID = outputURI.getPathFileBase() + ".bin";
         std::string outputVerticesFilePath = outputURI.getPathDir() + sharedVerticesBufferID;
         std::string outputIndicesFilePath = outputURI.getPathDir() + sharedIndicesBufferID;
         std::string outputAnimationsFilePath = outputURI.getPathDir() + sharedAnimationsBufferID;
@@ -91,8 +91,11 @@ namespace GLTF
         
         this->_converterContext.root = shared_ptr <GLTF::JSONObject> (new GLTF::JSONObject());
         this->_converterContext.root->setString("profile", "WebGL 1.0");
-        this->_converterContext.root->setString("version", "0.3");
         this->_converterContext.root->setValue("nodes", shared_ptr <GLTF::JSONObject> (new GLTF::JSONObject()));
+        
+        shared_ptr<JSONObject> asset = this->_converterContext.root->createObjectIfNeeded("asset");
+        std::string version = "collada2gltf "+std::string(CONVERTER_VERSION);
+        asset->setString("generator",version);
         
         COLLADASaxFWL::Loader loader;
 		COLLADAFW::Root root(&loader, this);
@@ -592,10 +595,11 @@ namespace GLTF
                                 }
                                 
                                 //generate shaders if needed
-                                const std::string& techniqueID = GLTF::getReferenceTechniqueID(effect->getValues(),
-                                                                                         techniqueExtras,
-                                                                                         texcoordBindings,
-                                                                                         this->_converterContext);
+                                const std::string& techniqueID = GLTF::getReferenceTechniqueID(effect->getLightingModel(),
+                                                                                               effect->getValues(),
+                                                                                               techniqueExtras,
+                                                                                               texcoordBindings,
+                                                                                               this->_converterContext);
                                 
                                 effect->setTechniqueID(techniqueID);
                                 effect->setName(materialName);
@@ -903,6 +907,23 @@ namespace GLTF
             cvtEffect->setValues(values);
             
             const COLLADAFW::EffectCommon* effectCommon = commonEffects[0];
+            
+            switch (effectCommon->getShaderType()) {
+                case COLLADAFW::EffectCommon::SHADER_BLINN:
+                    cvtEffect->setLightingModel("Blinn");
+                    break;
+                case COLLADAFW::EffectCommon::SHADER_CONSTANT:
+                    cvtEffect->setLightingModel("Constant");
+                    break;
+                case COLLADAFW::EffectCommon::SHADER_PHONG:
+                    cvtEffect->setLightingModel("Phong");
+                    break;
+                case COLLADAFW::EffectCommon::SHADER_LAMBERT:
+                    cvtEffect->setLightingModel("Lambert");
+                    break;
+                default:
+                    break;
+            }
             
             handleEffectSlot(effectCommon,"diffuse" , cvtEffect);
             handleEffectSlot(effectCommon,"ambient" , cvtEffect);

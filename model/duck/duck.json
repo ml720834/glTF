@@ -1,5 +1,8 @@
 {
     "animations": {},
+    "asset": {
+        "generator": "collada2gltf 0.1.0"
+    },
     "attributes": {
         "attribute_22": {
             "bufferView": "bufferView_28",
@@ -209,8 +212,8 @@
     "profile": "WebGL 1.0",
     "programs": {
         "program_0": {
-            "fragmentShader": "technique1FS",
-            "vertexShader": "technique1VS"
+            "fragmentShader": "duck0FS",
+            "vertexShader": "duck0VS"
         }
     },
     "scene": "defaultScene",
@@ -224,11 +227,11 @@
         }
     },
     "shaders": {
-        "technique1FS": {
-            "path": "technique1FS.glsl"
+        "duck0FS": {
+            "path": "duck0FS.glsl"
         },
-        "technique1VS": {
-            "path": "technique1VS.glsl"
+        "duck0VS": {
+            "path": "duck0VS.glsl"
         }
     },
     "techniques": {
@@ -236,10 +239,6 @@
             "parameters": {
                 "diffuse": {
                     "type": "SAMPLER_2D"
-                },
-                "diffuseAttrib": {
-                    "semantic": "TEXCOORD_0",
-                    "type": "FLOAT_VEC2"
                 },
                 "normal": {
                     "semantic": "NORMAL",
@@ -269,9 +268,23 @@
             "pass": "defaultPass",
             "passes": {
                 "defaultPass": {
+                    "details": {
+                        "commonProfile": {
+                            "extras": {
+                                "doubleSided": false
+                            },
+                            "lightingModel": "Blinn",
+                            "parameters": [
+                                "diffuse"
+                            ],
+                            "texcoordBindings": {
+                                "diffuse": "TEXCOORD_0"
+                            }
+                        },
+                        "type": "COLLADA-1.4.1/commonProfile"
+                    },
                     "instanceProgram": {
                         "attributes": {
-                            "a_diffuseAttrib": "diffuseAttrib",
                             "a_normal": "normal",
                             "a_position": "position",
                             "a_texcoord0": "texcoord0"
@@ -293,6 +306,5 @@
                 }
             }
         }
-    },
-    "version": "0.3"
+    }
 }

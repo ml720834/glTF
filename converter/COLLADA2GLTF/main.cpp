@@ -26,6 +26,8 @@
 
 //find . -name '*.dae' -exec dae2json {} \;
 
+#import <getopt.h>
+
 #include <iostream>
 
 #include "GLTF.h"
@@ -35,77 +37,153 @@
 #include "COLLADA2GLTFWriter.h"
 
 #define STDOUT_OUTPUT 0
+#define OPTIONS_COUNT 7
 
-enum ArgsState
-{
-    PARSE_INPUT_FILE_ARG = 0,
-    PARSE_OUTPUT_FILE_ARG,
-    PARSE_STATES_END
+typedef struct {
+    const char* name;
+    int has_arg;
+    const char* help;
+} OptionDescriptor;
+
+option* opt_options;
+std::string helpMessage = "";
+
+static const OptionDescriptor options[] = {
+	{ "f",				required_argument,  "-f -> path of input file, argument [string]" },
+	{ "o",				required_argument,  "-o -> path of output file argument [string]" },
+	{ "a",              required_argument,  "-a -> export animations, argument [bool], default:true" },
+	{ "i",              no_argument,        "-i -> invert-transparency" },
+	{ "d",              no_argument,        "-d -> export pass details to be able to regenerate shaders and states" },
+	{ "p",              no_argument,        "-p -> output progress" },
+	{ "h",              no_argument,        "-h -> help" }
 };
 
-void usage(char* prog)
-{
-	fprintf(stderr,"\nUSAGE: %s [COLLADA inputFile] [options] \n", prog);
+static void buildOptions() {
+    helpMessage += "*COLLADA2GLTF V"+std::string(CONVERTER_VERSION)+"*\n\n";
+    helpMessage += "usage: collada2gltlf -f [file] [options]\n";
+    helpMessage += "options:\n";
+    
+    opt_options = (option*)malloc(sizeof(option) * OPTIONS_COUNT);
+    
+    for (size_t i = 0 ; i < OPTIONS_COUNT ; i++) {
+        opt_options[i].flag = 0;
+        opt_options[i].val = 'f';
+        opt_options[i].name = options[i].name;
+        opt_options[i].has_arg = options[i].has_arg;
+        
+        helpMessage += options[i].help;
+        helpMessage += "\n";
+    }
 }
 
-static std::string __ReplacePathExtensionWithJSON(const std::string& inputFile)
+static void dumpHelpMessage() {
+    printf("%s\n", helpMessage.c_str());
+}
+
+static std::string replacePathExtensionWithJSON(const std::string& inputFile)
 {
     COLLADABU::URI inputFileURI(inputFile.c_str());
     
     std::string pathDir = inputFileURI.getPathDir();
-    
     std::string fileBase = inputFileURI.getPathFileBase();
     
     return pathDir + fileBase + ".json";
 }
 
-static bool __SetupCOLLADA2GLTFContext(int argc, char * const argv[], GLTF::GLTFConverterContext *converterArgs)
-{
-    assert(converterArgs);
-        
-    if (argc < 2) {
-		fprintf(stderr, "%s: missing arguments\n", argv[0]);
-		usage(argv[0]);
-		exit(1);
+static bool processArgs(int argc, char * const * argv, GLTF::GLTFConverterContext *converterArgs) {
+	int ch;
+    std::string file;
+    std::string output;
+    bool hasOutputPath = false;
+    bool hasInputPath = false;
+
+    converterArgs->invertTransparency = false;
+    converterArgs->exportAnimations = true;
+    converterArgs->exportPassDetails = false;
+    converterArgs->outputProgress = false;
+    
+    buildOptions();
+    
+    if (argc == 2) {
+        converterArgs->inputFilePath = argv[1];
+        converterArgs->outputFilePath = replacePathExtensionWithJSON(converterArgs->inputFilePath);
+        return true;
+    }
+    
+    while ((ch = getopt_long(argc, argv, "f:o:a:ihdp", opt_options, 0)) != -1) {
+        switch (ch) {
+            case 'h':
+                dumpHelpMessage();
+                return false;
+            case 'f':
+                converterArgs->inputFilePath = optarg;
+                hasInputPath = true;
+				break;
+            case 'o':
+                converterArgs->outputFilePath = replacePathExtensionWithJSON(optarg);
+                hasOutputPath = true;
+				break;
+            case 'i':
+                converterArgs->invertTransparency = true;
+                break;
+            case 'p':
+                converterArgs->outputProgress = true;
+                break;
+            case 'a':
+                //converterArgs->exportAnimations = true;
+                break;
+            case 'd':
+                converterArgs->exportPassDetails = true;
+                printf("[option] export pass details\n");
+                break;
+                
+			case 0:
+				break;
+		}
+	}
+    
+    if (!hasInputPath) {
+        dumpHelpMessage();
         return false;
     }
-    converterArgs->invertTransparency = false;
     
-    converterArgs->inputFilePath = argv[1];
-    converterArgs->outputFilePath = __ReplacePathExtensionWithJSON(converterArgs->inputFilePath);
-    
-    if (argc > 2) {
-        if (strcmp(argv[2], "-i") == 0) {
-            converterArgs->invertTransparency = true;
-            printf("[option] invert transparency: on\n");
-        }
+    if (!hasOutputPath) {
+        converterArgs->outputFilePath = replacePathExtensionWithJSON(converterArgs->inputFilePath);
     }
-    
+        
     return true;
 }
 
-
 int main (int argc, char * const argv[]) {
-    GLTF::GLTFConverterContext converterArgs;
+    GLTF::GLTFConverterContext converterContext;
     
-    printf("COLLADA2GLTF [pre-alpha] 0.2\n");
-    if (__SetupCOLLADA2GLTFContext( argc, argv, &converterArgs)) {
+    if (processArgs(argc, argv, &converterContext)) {
 #if !STDOUT_OUTPUT
-        FILE* fd = fopen(converterArgs.outputFilePath.c_str(), "w");
+        FILE* fd = fopen(converterContext.outputFilePath.c_str(), "w");
         if (fd) {
             rapidjson::FileStream s(fd);
 #else
             rapidjson::FileStream s(stdout);
 #endif
             rapidjson::PrettyWriter <rapidjson::FileStream> jsonWriter(s);
-            printf("converting:%s ... as %s \n",converterArgs.inputFilePath.c_str(), converterArgs.outputFilePath.c_str());
-            GLTF::COLLADA2GLTFWriter* writer = new GLTF::COLLADA2GLTFWriter(converterArgs, &jsonWriter);
+            if (converterContext.outputProgress) {
+                printf("convertion 0%%");
+                printf("\n\033[F\033[J");
+            } else {
+                printf("converting:%s ... as %s \n",converterContext.inputFilePath.c_str(), converterContext.outputFilePath.c_str());
+            }
+            GLTF::COLLADA2GLTFWriter* writer = new GLTF::COLLADA2GLTFWriter(converterContext, &jsonWriter);
             writer->write();
-            printf("[completed conversion]\n");
+            if (converterContext.outputProgress) {
+                printf("convertion 100%%");
+                printf("\n");
+            } else {
+                printf("[completed conversion]\n");
+            }
 #if !STDOUT_OUTPUT
             fclose(fd);
             delete writer;
-        }   
+        }
 #endif
     }
     return 0;
