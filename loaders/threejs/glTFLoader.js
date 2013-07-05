@@ -332,7 +332,7 @@ THREE.glTFLoader = function ( context, showStatus ) {
         },
 
         threeJSMaterialType : {
-            value: function(technique, params) {
+            value: function(technique, values, params) {
         	
         		var materialType = THREE.MeshBasicMaterial;
         
@@ -364,6 +364,34 @@ THREE.glTFLoader = function ( context, showStatus ) {
 	            			params.side = THREE.DoubleSide;
 	            		}
             		}
+
+                    var texturePath = null;
+                    
+                    var diffuse = values.diffuse;
+                    if (diffuse)
+                    {
+                    	var texture = diffuse.value;
+                        if (texture) {
+                            var imageEntry = this.resources.getEntry(texture.image);
+                            if (imageEntry) {
+                                texturePath = imageEntry.description.path;
+                            }
+                        }                    
+                    }
+                    
+                    var diffuseColor = !texturePath ? diffuse.value : null;
+                    var opacity = 1.0;
+                    if (values.transparency)
+                    {
+                    	var USE_A_ONE = false; // for now, hack because file format isn't telling us
+                    	opacity =  USE_A_ONE ? values.transparency.value : (1.0 - values.transparency.value);
+                    }
+                                        
+                    params.color = RgbArraytoHex(diffuseColor);
+                    params.opacity = opacity;
+                    params.transparent = opacity < 1.0;
+                    params.map = LoadTexture(texturePath);
+        		
         		}
         		
         		return materialType;
@@ -375,10 +403,8 @@ THREE.glTFLoader = function ( context, showStatus ) {
             value: function(entryID, description, userInfo) {
                 //this should be rewritten using the meta datas that actually create the shader.
                 //here we will infer what needs to be pass to Three.js by looking inside the technique parameters.
-                var texturePath = null;
                 var technique = this.resources.getEntry(description.instanceTechnique.technique);
                 var materialParams = {};
-                var materialType = this.threeJSMaterialType(technique, materialParams);
                 var vals = description.instanceTechnique.values;
                 var values = {};
                 var i, len = vals.length;
@@ -386,26 +412,9 @@ THREE.glTFLoader = function ( context, showStatus ) {
                 {
                 	values[vals[i].parameter] = vals[i];
                 }
-                
-                var diffuse = values.diffuse;
-                if (diffuse)
-                {
-                	var texture = diffuse.value;
-                    if (texture) {
-                        var imageEntry = this.resources.getEntry(texture.image);
-                        if (imageEntry) {
-                            texturePath = imageEntry.description.path;
-                        }
-                    }                    
-                }
-                
-                var diffuseColor = !texturePath ? diffuse.value : null;
-                var transparency = values.transparency ? values.transparency.value : 1.0;
 
-                materialParams.color = RgbArraytoHex(diffuseColor);
-                materialParams.opacity = transparency;
-                materialParams.map = LoadTexture(texturePath);
-                
+                var materialType = this.threeJSMaterialType(technique, values, materialParams);
+
                 var material = new materialType(materialParams);
 
                 this.resources.setEntry(entryID, material, description);
