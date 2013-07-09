@@ -379,6 +379,12 @@ THREE.glTFLoader = function ( context, showStatus ) {
                         }                    
                     }
                     
+                    var shininess = values.shininesss || values.shininess; // N.B.: typo in converter!
+                    if (shininess)
+                    {
+                    	shininess = shininess.value;
+                    }
+                    
                     var diffuseColor = !texturePath ? diffuse.value : null;
                     var opacity = 1.0;
                     if (values.transparency)
@@ -391,7 +397,10 @@ THREE.glTFLoader = function ( context, showStatus ) {
                     params.opacity = opacity;
                     params.transparent = opacity < 1.0;
                     params.map = LoadTexture(texturePath);
-        		
+                    if (!(shininess === undefined))
+                    {
+                    	params.shininess = shininess;
+                    }
         		}
         		
         		return materialType;
