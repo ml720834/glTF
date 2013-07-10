@@ -121,6 +121,11 @@
                         defaultCamera.position.set(0, 3, 10);
                         object.scale.set(.01, .01, .01);
 
+                        if (loader.cameras && loader.cameras.length)
+                        {
+                            camera = loader.cameras[0];
+                        }
+                        
                         ground.position.z = -70;
                         ground.rotation.x = -Math.PI / 2;
                         

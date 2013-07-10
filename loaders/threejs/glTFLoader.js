@@ -5,8 +5,14 @@
 
 THREE.glTFLoader = function ( context, showStatus ) {
     THREE.Loader.call( this, showStatus );
+}
 
-    // Utilities
+THREE.glTFLoader.prototype = new THREE.Loader();
+THREE.glTFLoader.prototype.constructor = THREE.glTFLoader;
+
+THREE.glTFLoader.prototype.load = function( url, callback ) {
+
+	// Utilities
 
     function RgbArraytoHex(colorArray) {
         if(!colorArray) return 0xFFFFFFFF;
@@ -711,19 +717,20 @@ THREE.glTFLoader = function ( context, showStatus ) {
         this.callback = callback;
     };
 
-    return {
-    	load : function( url, callback ) {
-	        var rootObj = new THREE.Object3D();
-	
-	        var loader = Object.create(ThreeGLTFLoader);
-	            loader.initWithPath(url);
-	            loader.load(new Context(rootObj, callback) /* userInfo */, null /* options */);
-	
-	        return rootObj;
-    	}
-    };
+    var rootObj = new THREE.Object3D();
+
+    var self = this;
+    
+    var loader = Object.create(ThreeGLTFLoader);
+    loader.initWithPath(url);
+    loader.load(new Context(rootObj, 
+    					function(obj) {
+    						self.cameras = loader.cameras;
+    						callback(obj);
+    					}), 
+    			null);
+
+    return rootObj;
 }
 
-THREE.glTFLoader.prototype = new THREE.Loader();
-THREE.glTFLoader.prototype.constructor = THREE.glTFLoader;
 
