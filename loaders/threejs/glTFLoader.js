@@ -265,7 +265,7 @@ THREE.glTFLoader = function ( context, showStatus ) {
     }
     
     LoadDelegate.prototype.loadCompleted = function(callback, obj) {
-    	callback.call(obj);
+    	callback.call(Window, obj);
     }
     
     // Loader
@@ -276,16 +276,17 @@ THREE.glTFLoader = function ( context, showStatus ) {
             enumerable: true,
             value: function(userInfo, options) {
                 this.resources = new Resources();
+                this.cameras = [];
                 WebGLTFLoader.load.call(this, userInfo, options);
             }
         },
 
-        binaryLoader: {
-            value: null,
-            writable: true
-
+        cameras: {
+        	enumerable: true,
+        	writable: true,
+        	value : []
         },
-
+        
         // Implement WebGLTFLoader handlers
 
         handleBuffer: {
@@ -518,7 +519,39 @@ THREE.glTFLoader = function ( context, showStatus ) {
 
         handleCamera: {
             value: function(entryID, description, userInfo) {
-                // No camera handling at this time
+                var camera;
+                if (description.projection == "perspective")
+                {
+                	var yfov = description.yfov;                	
+                	var xfov = description.xfov;
+            		var aspect_ratio = description.aspect_ratio;
+            		var znear = description.znear;
+            		var zfar = description.zfar;
+                	if (yfov === undefined)
+                	{
+                		if (xfov)
+                		{
+                			// N.B.: if no aspect ratio supplied, assume 1?
+	                		if (!aspect_ratio)
+	                			aspect_ration = 1;
+	                		
+                			// According to COLLADA spec...
+                			// aspect_ratio = xfov / yfov
+                			yfov = 1 / (xfov * aspect_ratio);
+                		}
+                	}
+                	
+                	if (yfov)
+                	{
+                		camera = new THREE.PerspectiveCamera(yfov, aspect_ratio, znear, zfar);
+                	}
+                }
+                
+                if (camera)
+                {
+                	this.resources.setEntry(entryID, camera, description);
+                }
+                
                 return true;
             }
         },
@@ -568,10 +601,11 @@ THREE.glTFLoader = function ( context, showStatus ) {
                     }, this);
                 }
 
-                /*if (description.camera) {
+                if (description.camera) {
                     var cameraEntry = this.resources.getEntry(description.camera);
-                    node.cameras.push(cameraEntry.entry);
-                }*/
+                    threeNode.add(cameraEntry.object);
+                    this.cameras.push(cameraEntry.object);
+                }
 
                 return true;
             }

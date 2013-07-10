@@ -40,7 +40,7 @@
 			function onload() {
                 var container, stats;
 
-                var camera, scene, renderer;
+                var camera, scene, renderer, loader;
 
                 var mouseX = 0, mouseY = 0;
 
@@ -56,10 +56,11 @@
 
                     scene = new THREE.Scene();
 
-                    camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
+                    var defaultCamera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
                     
-                    camera.up = new THREE.Vector3( 0, 1, 0 );
-                    scene.add( camera );
+                    defaultCamera.up = new THREE.Vector3( 0, 1, 0 );
+                    scene.add( defaultCamera );
+                    camera = defaultCamera;
 
                     var ambient = new THREE.AmbientLight( 0x444444 );
                     scene.add( ambient );
@@ -98,7 +99,7 @@
                     ground.receiveShadow = true;
                     scene.add(ground);
 
-                    var loader = new THREE.glTFLoader( renderer.context );
+                    loader = new THREE.glTFLoader( renderer.context );
 
                     var objSrc = "../../model/duck/duck.json";
                     // var objSrc = "../../model/wine/wine.json";
@@ -117,15 +118,15 @@
                         rootObj.position.z = -20;*/
 
                         // For the duck
-                        camera.position.set(0, 3, 10);
-                        rootObj.scale.set(.01, .01, .01);
+                        defaultCamera.position.set(0, 3, 10);
+                        object.scale.set(.01, .01, .01);
 
                         ground.position.z = -70;
                         ground.rotation.x = -Math.PI / 2;
                         
-                        rootObj.castShadow = true;
+                        object.castShadow = true;
 
-                        scene.add( rootObj );
+                        scene.add( object );
 
                     });
 
