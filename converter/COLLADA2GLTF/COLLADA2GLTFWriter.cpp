@@ -1186,8 +1186,10 @@ namespace GLTF
         
         if (slotName == "diffuse")
             slot = commonProfile->getDiffuse();
+#if 0
         else if (slotName == "ambient")
             slot = commonProfile->getAmbient();
+#endif
         else if (slotName == "emission")
             slot = commonProfile->getEmission();
         else if (slotName == "specular")
