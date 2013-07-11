@@ -526,13 +526,13 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
         handleCamera: {
             value: function(entryID, description, userInfo) {
                 var camera;
+        		var znear = description.znear;
+        		var zfar = description.zfar;
                 if (description.projection == "perspective")
                 {
                 	var yfov = description.yfov;                	
                 	var xfov = description.xfov;
             		var aspect_ratio = description.aspect_ratio;
-            		var znear = description.znear;
-            		var zfar = description.zfar;
                 	if (yfov === undefined)
                 	{
                 		if (xfov)
@@ -551,6 +551,10 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                 	{
                 		camera = new THREE.PerspectiveCamera(yfov, aspect_ratio, znear, zfar);
                 	}
+                }
+                else
+                {
+    				camera = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, znear, zfar );
                 }
                 
                 if (camera)
