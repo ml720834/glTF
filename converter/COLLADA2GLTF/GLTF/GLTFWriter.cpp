@@ -178,19 +178,18 @@ namespace GLTF
         shared_ptr <GLTF::JSONObject> semantics(new GLTF::JSONObject());
         primitiveObject->setValue("semantics", semantics);
         
-        size_t count = primitive->getIndicesInfosCount();
+        size_t count = primitive->getVertexAttributesCount();
         for (size_t j = 0 ; j < count ; j++) {
             GLTF::Semantic semantic = primitive->getSemanticAtIndex(j);
             
             std::string semanticAndSet = GLTFUtils::getStringForSemantic(semantic);
             
             unsigned int indexOfSet = 0;
-            if ((semantic != GLTF::POSITION) && (semantic != GLTF::NORMAL)) {
+            if (semantic == GLTF::TEXCOORD) {
                 indexOfSet = primitive->getIndexOfSetAtIndex(j);
                 semanticAndSet += "_" + GLTFUtils::toString(indexOfSet);
             }
-            semantics->setString(semanticAndSet,
-                                     mesh->getMeshAttributesForSemantic(semantic)[indexOfSet]->getID());
+            semantics->setString(semanticAndSet, mesh->getMeshAttributesForSemantic(semantic)[indexOfSet]->getID());
         }
         shared_ptr <GLTF::GLTFIndices> uniqueIndices = primitive->getUniqueIndices();
         primitiveObject->setString("indices", uniqueIndices->getID());
@@ -248,6 +247,15 @@ namespace GLTF
         animationObject->setValue("parameters", parametersObject);
         
         return animationObject;
+    }
+    
+    shared_ptr<JSONObject> serializeSkin(GLTFSkin* skin) {
+        shared_ptr <JSONObject> skinObject(new JSONObject());
+        
+        skinObject->setValue("joints", skin->getJointsIds());
+        skinObject->setValue("bindShapeMatrix", skin->getBindShapeMatrix());
+        
+        return skinObject;
     }
     
     //-- Writer

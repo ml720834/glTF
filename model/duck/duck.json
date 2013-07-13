@@ -103,17 +103,35 @@
                 "values": [
                     {
                         "parameter": "diffuse",
-                        "value": {
-                            "image": "image_0",
-                            "magFilter": "LINEAR",
-                            "minFilter": "LINEAR_MIPMAP_LINEAR",
-                            "wrapS": "REPEAT",
-                            "wrapT": "REPEAT"
-                        }
+                        "value": "texture_image_0"
                     },
                     {
-                        "parameter": "shininesss",
+                        "parameter": "emission",
+                        "value": [
+                            0,
+                            0,
+                            0
+                        ]
+                    },
+                    {
+                        "parameter": "reflective",
+                        "value": [
+                            0,
+                            0,
+                            0
+                        ]
+                    },
+                    {
+                        "parameter": "shininess",
                         "value": 38.4
+                    },
+                    {
+                        "parameter": "specular",
+                        "value": [
+                            0,
+                            0,
+                            0
+                        ]
                     }
                 ]
             },
@@ -138,7 +156,7 @@
         }
     },
     "nodes": {
-        "node_0": {
+        "LOD3sp": {
             "children": [],
             "matrix": [
                 1,
@@ -163,7 +181,7 @@
             ],
             "name": "LOD3sp"
         },
-        "node_1": {
+        "camera1": {
             "camera": "camera_0",
             "children": [],
             "matrix": [
@@ -186,7 +204,7 @@
             ],
             "name": "camera1"
         },
-        "node_2": {
+        "directionalLight1": {
             "children": [],
             "matrix": [
                 -0.954692,
@@ -216,13 +234,21 @@
             "vertexShader": "duck0VS"
         }
     },
+    "samplers": {
+        "sampler_0": {
+            "magFilter": "LINEAR",
+            "minFilter": "LINEAR_MIPMAP_LINEAR",
+            "wrapS": "REPEAT",
+            "wrapT": "REPEAT"
+        }
+    },
     "scene": "defaultScene",
     "scenes": {
         "defaultScene": {
             "nodes": [
-                "node_0",
-                "node_1",
-                "node_2"
+                "LOD3sp",
+                "camera1",
+                "directionalLight1"
             ]
         }
     },
@@ -234,11 +260,15 @@
             "path": "duck0VS.glsl"
         }
     },
+    "skins": {},
     "techniques": {
         "technique1": {
             "parameters": {
                 "diffuse": {
                     "type": "SAMPLER_2D"
+                },
+                "emission": {
+                    "type": "FLOAT_VEC3"
                 },
                 "normal": {
                     "semantic": "NORMAL",
@@ -255,6 +285,15 @@
                 "projectionMatrix": {
                     "semantic": "PROJECTION",
                     "type": "FLOAT_MAT4"
+                },
+                "reflective": {
+                    "type": "FLOAT_VEC3"
+                },
+                "shininess": {
+                    "type": "FLOAT"
+                },
+                "specular": {
+                    "type": "FLOAT_VEC3"
                 },
                 "texcoord0": {
                     "semantic": "TEXCOORD_0",
@@ -275,7 +314,14 @@
                             },
                             "lightingModel": "Blinn",
                             "parameters": [
-                                "diffuse"
+                                "diffuse",
+                                "emission",
+                                "normalMatrix",
+                                "projectionMatrix",
+                                "reflective",
+                                "shininess",
+                                "specular",
+                                "worldViewMatrix"
                             ],
                             "texcoordBindings": {
                                 "diffuse": "TEXCOORD_0"
@@ -292,8 +338,12 @@
                         "program": "program_0",
                         "uniforms": {
                             "u_diffuse": "diffuse",
+                            "u_emission": "emission",
                             "u_normalMatrix": "normalMatrix",
                             "u_projectionMatrix": "projectionMatrix",
+                            "u_reflective": "reflective",
+                            "u_shininess": "shininess",
+                            "u_specular": "specular",
                             "u_worldViewMatrix": "worldViewMatrix"
                         }
                     },
@@ -305,6 +355,15 @@
                     }
                 }
             }
+        }
+    },
+    "textures": {
+        "texture_image_0": {
+            "format": "RGBA",
+            "internalFormat": "RGBA",
+            "sampler": "sampler_0",
+            "source": "image_0",
+            "target": "TEXTURE_2D"
         }
     }
 }
