@@ -379,9 +379,15 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                     {
                     	var texture = diffuse.value;
                         if (texture) {
-                            var imageEntry = this.resources.getEntry(texture.image);
-                            if (imageEntry) {
-                                texturePath = imageEntry.description.path;
+                            var textureEntry = this.resources.getEntry(texture);
+                            if (textureEntry) {
+                            	{
+                            		var imageEntry = this.resources.getEntry(textureEntry.description.source);
+                            		if (imageEntry)
+                            		{
+                            			texturePath = imageEntry.description.path;
+                            		}
+                            	}
                             }
                         }                    
                     }
@@ -685,6 +691,29 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
             value: function(entryID, description, userInfo) {
 	    		// Save attribute entry
 	    		this.resources.setEntry(entryID, description, description);
+                return true;
+            }
+        },
+
+        handleSkin: {
+            value: function(entryID, description, userInfo) {
+            	// No skin handling at this time
+                return true;
+            }
+        },
+
+        handleSampler: {
+            value: function(entryID, description, userInfo) {
+	    		// Save attribute entry
+	    		this.resources.setEntry(entryID, null, description);
+                return true;
+            }
+        },
+
+        handleTexture: {
+            value: function(entryID, description, userInfo) {
+	    		// Save attribute entry
+	    		this.resources.setEntry(entryID, null, description);
                 return true;
             }
         },
