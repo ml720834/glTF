@@ -592,14 +592,14 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
 
                 var m = description.matrix;
                 if(m) {
-                    threeNode.matrixAutoUpdate = true;
-/*                    threeNode.applyMatrix(new THREE.Matrix4(
+                    threeNode.matrixAutoUpdate = false;
+                    threeNode.applyMatrix(new THREE.Matrix4(
                         m[0],  m[4],  m[8],  m[12],
                         m[1],  m[5],  m[9],  m[13],
                         m[2],  m[6],  m[10], m[14],
                         m[3],  m[7],  m[11], m[15]
                     ));
-*/                }
+                }
 
                 // Iterate through all node meshes and attach the appropriate objects
                 //FIXME: decision needs to be made between these 2 ways, probably meshes will be discarded.

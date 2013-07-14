@@ -105,9 +105,9 @@
                     // var objSrc = "../../model/wine/wine.json";
                     // var objSrc = "../../model/rambler/rambler.json";
                     // var objSrc = "../../model/SuperMurdoch/SuperMurdoch.json";
-                    // var objSrc = "/glTFTests/vc/vc.json";
+                    var objSrc = "/glTFTests/vc/vc.json";
                     // var objSrc = "/glTFTests/vc/vcskbox.json";
-                    var objSrc = "/glTFTests/minebot/mine_bot_anim.json";
+                    // var objSrc = "/glTFTests/minebot/mine_bot_anim.json";
                     // var objSrc = "/glTFTests/frigate/frigate.json";
                     
                     var rootObj = loader.load( objSrc, function(object) {
@@ -125,6 +125,10 @@
                         // For the duck
                         defaultCamera.position.set(0, 3, 10);
                         // object.scale.set(.01, .01, .01);
+                        
+                        // For the virtual city
+                        defaultCamera.position.set(0, 3, 10);
+                        object.rotation.set(-Math.PI / 2, 0, 0);
 
                         if (loader.cameras && loader.cameras.length)
                         {
