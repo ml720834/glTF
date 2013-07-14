@@ -372,50 +372,53 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
 	            		}
             		}
 
-                    var texturePath = null;
-                    
-                    var diffuse = values.diffuse;
-                    if (diffuse)
-                    {
-                    	var texture = diffuse.value;
-                        if (texture) {
-                            var textureEntry = this.resources.getEntry(texture);
-                            if (textureEntry) {
-                            	{
-                            		var imageEntry = this.resources.getEntry(textureEntry.description.source);
-                            		if (imageEntry)
-                            		{
-                            			texturePath = imageEntry.description.path;
-                            		}
-                            	}
-                            }
-                        }                    
-                    }
-                    
-                    var shininess = values.shininesss || values.shininess; // N.B.: typo in converter!
-                    if (shininess)
-                    {
-                    	shininess = shininess.value;
-                    }
-                    
-                    var diffuseColor = !texturePath ? diffuse.value : null;
-                    var opacity = 1.0;
-                    if (values.transparency)
-                    {
-                    	var USE_A_ONE = false; // for now, hack because file format isn't telling us
-                    	opacity =  USE_A_ONE ? values.transparency.value : (1.0 - values.transparency.value);
-                    }
-                                        
-                    params.color = RgbArraytoHex(diffuseColor);
-                    params.opacity = opacity;
-                    params.transparent = opacity < 1.0;
-                    params.map = LoadTexture(texturePath);
-                    if (!(shininess === undefined))
-                    {
-                    	params.shininess = shininess;
-                    }
         		}
         		
+                var texturePath = null;
+                
+                var diffuse = values.diffuse;
+                if (diffuse)
+                {
+                	var texture = diffuse.value;
+                    if (texture) {
+                        var textureEntry = this.resources.getEntry(texture);
+                        if (textureEntry) {
+                        	{
+                        		var imageEntry = this.resources.getEntry(textureEntry.description.source);
+                        		if (imageEntry)
+                        		{
+                        			texturePath = imageEntry.description.path;
+                        		}
+                        	}
+                        }
+                    }                    
+                }
+                
+                var shininess = values.shininesss || values.shininess; // N.B.: typo in converter!
+                if (shininess)
+                {
+                	shininess = shininess.value;
+                }
+                
+                var diffuseColor = !texturePath ? diffuse.value : null;
+                var opacity = 1.0;
+                if (values.transparency)
+                {
+                	var USE_A_ONE = false; // for now, hack because file format isn't telling us
+                	opacity =  USE_A_ONE ? values.transparency.value : (1.0 - values.transparency.value);
+                }
+                
+                if (diffuseColor) diffuseColor = [0, 1, 0];
+                                    
+                params.color = RgbArraytoHex(diffuseColor);
+                params.opacity = opacity;
+                params.transparent = opacity < 1.0;
+                params.map = LoadTexture(texturePath);
+                if (!(shininess === undefined))
+                {
+                	params.shininess = shininess;
+                }
+    		
         		return materialType;
         		
         	}
@@ -545,7 +548,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                 		{
                 			// N.B.: if no aspect ratio supplied, assume 1?
 	                		if (!aspect_ratio)
-	                			aspect_ration = 1;
+	                			aspect_ratio = 1;
 	                		
                 			// According to COLLADA spec...
                 			// aspect_ratio = xfov / yfov
@@ -589,14 +592,14 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
 
                 var m = description.matrix;
                 if(m) {
-                    threeNode.matrixAutoUpdate = false;
-                    threeNode.applyMatrix(new THREE.Matrix4(
+                    threeNode.matrixAutoUpdate = true;
+/*                    threeNode.applyMatrix(new THREE.Matrix4(
                         m[0],  m[4],  m[8],  m[12],
                         m[1],  m[5],  m[9],  m[13],
                         m[2],  m[6],  m[10], m[14],
                         m[3],  m[7],  m[11], m[15]
                     ));
-                }
+*/                }
 
                 // Iterate through all node meshes and attach the appropriate objects
                 //FIXME: decision needs to be made between these 2 ways, probably meshes will be discarded.

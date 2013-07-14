@@ -92,9 +92,15 @@ THREE.GLTFLoaderUtils = Object.create(Object, {
     _handleRequest: {
         value: function(request) {
             var resourceStatus = this._resourcesStatus[request.id];
-            if (resourceStatus && resourceStatus.status === "loading" )
-                return;
-
+            if (resourceStatus)
+            {
+            	this._resourcesStatus[request.id]++;
+            }
+            else
+            {
+            	this._resourcesStatus[request.id] = 1;
+            }
+            
             this._resourcesStatus[request.id] =  { status : "loading"};
 
             var streamStatus = this._streamsStatus[request.path];
@@ -117,7 +123,7 @@ THREE.GLTFLoaderUtils = Object.create(Object, {
                     var convertedResource = req_.delegate.convert(subArray, req_.ctx);
                     self._storeResource(req_.id, convertedResource);
                     req_.delegate.resourceAvailable(convertedResource, req_.ctx);
-                    delete self._resourcesStatus[req_.id];
+                    --self._resourcesStatus[req_.id];
 
                 }, this);
             	

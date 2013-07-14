@@ -56,7 +56,7 @@
 
                     scene = new THREE.Scene();
 
-                    var defaultCamera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
+                    var defaultCamera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
                     
                     defaultCamera.up = new THREE.Vector3( 0, 1, 0 );
                     scene.add( defaultCamera );
@@ -104,7 +104,12 @@
                     // var objSrc = "../../model/duck/duck.json";
                     // var objSrc = "../../model/wine/wine.json";
                     // var objSrc = "../../model/rambler/rambler.json";
-                    var objSrc = "../../model/SuperMurdoch/SuperMurdoch.json";
+                    // var objSrc = "../../model/SuperMurdoch/SuperMurdoch.json";
+                    // var objSrc = "/glTFTests/vc/vc.json";
+                    // var objSrc = "/glTFTests/vc/vcskbox.json";
+                    var objSrc = "/glTFTests/minebot/mine_bot_anim.json";
+                    // var objSrc = "/glTFTests/frigate/frigate.json";
+                    
                     var rootObj = loader.load( objSrc, function(object) {
 
                         // For the car
@@ -119,11 +124,11 @@
 
                         // For the duck
                         defaultCamera.position.set(0, 3, 10);
-                        object.scale.set(.01, .01, .01);
+                        // object.scale.set(.01, .01, .01);
 
                         if (loader.cameras && loader.cameras.length)
                         {
-                            camera = loader.cameras[0];
+                            // camera = loader.cameras[0];
                         }
                         
                         ground.position.z = -70;
