@@ -234,6 +234,80 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
         });
     };
 
+    // Delegate for processing animation parameter buffers
+    var AnimationParameterDelegate = function() {};
+
+    AnimationParameterDelegate.prototype.handleError = function(errorCode, info) {
+        // FIXME: report error
+        console.log("ERROR(AnimationParameterDelegate):"+errorCode+":"+info);
+    };
+
+    AnimationParameterDelegate.prototype.convert = function(resource, ctx) {
+    	var parameter = ctx.parameter;
+
+    	var glResource = null;
+    	switch (parameter.type) {
+	        case "FLOAT" :
+	        case "FLOAT_VEC2" :
+	        case "FLOAT_VEC3" :
+	        case "FLOAT_VEC4" :
+	        	glResource = new Float32Array(resource, 0, parameter.count * componentsPerElementForGLType(parameter.type));
+	        	break;
+	        default:
+	        	break;
+    	}
+    	
+        return glResource;
+    };
+
+    AnimationParameterDelegate.prototype.resourceAvailable = function(glResource, ctx) {
+    	var animation = ctx.animation;
+    	var parameter = ctx.parameter;
+
+    	animation.handleParameterLoaded(parameter, glResource);
+        return true;
+    };
+
+    var animationParameterDelegate = new AnimationParameterDelegate();
+
+    var AnimationParameterContext = function(parameter, animation) {
+        this.parameter = parameter;
+        this.animation = animation;
+    };
+
+    // Animations
+    // Geometry processing
+
+    var Animation = function() {
+
+    	// create Three.js keyframe here
+        this.totalParameters = 0;
+        this.loadedParameters = 0;
+        this.parameters = [];
+        this.finished = false;
+        this.onload = null;
+
+    };
+
+    Animation.prototype.constructor = Animation;
+
+    Animation.prototype.handleParameterLoaded = function(parameter) {
+    	this.parameters.push(parameter);
+    	this.loadedParameters++;
+    	this.checkFinished();
+    };
+    
+    Animation.prototype.checkFinished = function() {
+        if(this.loadedParameters === this.totalParameters) {
+            // Build animation
+            this.finished = true;
+
+            if (this.onload) {
+                this.onload();
+            }
+        }
+    };
+    
     // Resource management
 
     var ResourceEntry = function(entryID, object, description) {
@@ -332,7 +406,6 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
 
         handleTechnique: {
             value: function(entryID, description, userInfo) {
-                // No technique handling at this time
         		this.resources.setEntry(entryID, null, description);
                 return true;
             }
@@ -676,8 +749,41 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
         
         handleAnimation: {
             value: function(entryID, description, userInfo) {
-                // No animation handling at this time
-                return true;
+	            var animation = new Animation();
+	            this.resources.setEntry(entryID, animation, description);
+	            var parameters = description.parameters;
+	            if (!parameters) {
+	                //FIXME: not implemented in delegate
+	                console.log("MISSING_PARAMETERS for animation:"+ entryID);
+	                return false;
+	            }
+	
+                // Load Vertex Attributes
+                var params = Object.keys(parameters);
+                params.forEach( function(param) {
+
+                	animation.totalParameters++;
+                    var parameter = parameters[param];
+                    var bufferEntry = this.resources.getEntry(parameter.bufferView);
+
+                    var paramObject = {
+                    		bufferView : bufferEntry,
+                    		byteOffset : parameter.byteOffset,
+                    		count : parameter.count,
+                    		type : parameter.type,
+                    		id : parameter.bufferView,
+                    		name : param             
+                    };
+                    
+                    var paramContext = new AnimationParameterContext(paramObject, animation);
+
+                    var alreadyProcessedAttribute = THREE.GLTFLoaderUtils.getBuffer(paramObject, animationParameterDelegate, paramContext);
+                    /*if(alreadyProcessedAttribute) {
+                        vertexAttributeDelegate.resourceAvailable(alreadyProcessedAttribute, attribContext);
+                    }*/
+                }, this);
+
+	            return true;
             }
         },
 
