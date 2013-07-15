@@ -263,8 +263,8 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
     AnimationParameterDelegate.prototype.resourceAvailable = function(glResource, ctx) {
     	var animation = ctx.animation;
     	var parameter = ctx.parameter;
-
-    	animation.handleParameterLoaded(parameter, glResource);
+    	parameter.data = glResource;
+    	animation.handleParameterLoaded(parameter);
         return true;
     };
 
@@ -283,7 +283,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
     	// create Three.js keyframe here
         this.totalParameters = 0;
         this.loadedParameters = 0;
-        this.parameters = [];
+        this.parameters = {};
         this.finished = false;
         this.onload = null;
 
@@ -292,7 +292,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
     Animation.prototype.constructor = Animation;
 
     Animation.prototype.handleParameterLoaded = function(parameter) {
-    	this.parameters.push(parameter);
+    	this.parameters[parameter.name] = parameter;
     	this.loadedParameters++;
     	this.checkFinished();
     };
@@ -750,6 +750,8 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
         handleAnimation: {
             value: function(entryID, description, userInfo) {
 	            var animation = new Animation();
+	            animation.channels = description.channels;
+	            animation.samplers = description.samplers;
 	            this.resources.setEntry(entryID, animation, description);
 	            var parameters = description.parameters;
 	            if (!parameters) {
