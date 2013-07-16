@@ -802,9 +802,48 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
             }
         },
         
+        buildAnimation: {
+        	value : function(animation) {
+        	
+	            var i, len = animation.channels.length;
+	            for (i = 0; i < len; i++) {
+	            	
+	            	var channel = animation.channels[i];
+	            	var sampler = animation.samplers[channel.sampler];
+	            	if (sampler) {
+	
+	            		var input = animation.parameters[sampler.input];
+	            		if (input && input.data) {
+	            			
+	            			var output = animation.parameters[sampler.output];
+	            			if (output && output.data) {
+	            				
+	            				var target = channel.target;
+	            				var node = this.resources.getEntry(target.id);
+	            				if (node) {
+			            			var track = {
+			            					keys : input.data,
+			            					values : output.data,
+			            					target : node.object,
+			            					path : target.path
+			            			};
+	            				}
+	            			}
+	            		}
+	            	}
+	            }
+	            
+        	}
+        },
+        
         handleAnimation: {
             value: function(entryID, description, userInfo) {
+        	
+        		var self = this;
 	            var animation = new Animation();
+	            animation.onload = function() {
+	            	self.buildAnimation(animation);
+	            };	            
 	            this.animations.push(animation);
 	            
 	            animation.channels = description.channels;
@@ -873,7 +912,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
         handleSampler: {
             value: function(entryID, description, userInfo) {
 	    		// Save attribute entry
-	    		this.resources.setEntry(entryID, null, description);
+	    		this.resources.setEntry(entryID, description, description);
                 return true;
             }
         },
