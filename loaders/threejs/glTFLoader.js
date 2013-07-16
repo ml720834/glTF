@@ -25,6 +25,23 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
 
         return color;
     }
+    
+    function convertAxisAngleToQuaternion(rotations, count)
+    {
+    	var q = new THREE.Quaternion;
+    	var axis = new THREE.Vector3;
+    	
+    	var i;
+    	for (i = 0; i < count; i++) {
+    		axis.set(rotations[i * 4], rotations[i * 4 + 1],
+    				rotations[i * 4 + 2]);
+    		q.setFromAxisAngle(axis, rotations[i * 4 + 3]);
+    		rotations[i * 4] = q.x;
+    		rotations[i * 4 + 1] = q.y;
+    		rotations[i * 4 + 2] = q.z;
+    		rotations[i * 4 + 3] = q.w;    		
+    	}
+    }
 
     function componentsPerElementForGLType(glType) {
         switch (glType) {
@@ -820,12 +837,21 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
 	            				
 	            				var target = channel.target;
 	            				var node = this.resources.getEntry(target.id);
+	            				var path = target.path;
+	            				if (path == "translation")
+	            					path = "position";
+	            				
+	            				if (path == "rotation")
+	            				{
+	            					convertAxisAngleToQuaternion(output.data, output.count);
+	            				}
+	            				
 	            				if (node) {
 			            			var track = {
 			            					keys : input.data,
 			            					values : output.data,
 			            					target : node.object,
-			            					path : target.path
+			            					path : path
 			            			};
 	            				}
 	            			}
