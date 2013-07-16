@@ -276,15 +276,13 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
     };
 
     // Animations
-    // Geometry processing
-
     var Animation = function() {
 
     	// create Three.js keyframe here
         this.totalParameters = 0;
         this.loadedParameters = 0;
         this.parameters = {};
-        this.finished = false;
+        this.finishedLoading = false;
         this.onload = null;
 
     };
@@ -300,7 +298,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
     Animation.prototype.checkFinished = function() {
         if(this.loadedParameters === this.totalParameters) {
             // Build animation
-            this.finished = true;
+            this.finishedLoading = true;
 
             if (this.onload) {
                 this.onload();
@@ -357,11 +355,25 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
             value: function(userInfo, options) {
                 this.resources = new Resources();
                 this.cameras = [];
+                this.lights = [];
+                this.animations = [];
                 WebGLTFLoader.load.call(this, userInfo, options);
             }
         },
 
         cameras: {
+        	enumerable: true,
+        	writable: true,
+        	value : []
+        },
+
+        lights: {
+        	enumerable: true,
+        	writable: true,
+        	value : []
+        },
+        
+        animations: {
         	enumerable: true,
         	writable: true,
         	value : []
@@ -650,8 +662,39 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
 
         handleLight: {
             value: function(entryID, description, userInfo) {
-                // No light handling at this time
-                return true;
+
+        		var light = null;
+        		var type = description.type;
+        		if (type && description[type])
+        		{
+        			var lparams = description[type];
+            		var color = RgbArraytoHex(lparams.color);
+            		
+            		switch (type) {
+            			case "directional" :
+            				light = new THREE.DirectionalLight();
+            			break;
+            			
+            			case "point" :
+            				light = new THREE.PointLight();
+            			break;
+            			
+            			case "spot " :
+            				light = new THREE.SpotLight();
+            			break;
+            			
+            			case "ambient" : 
+            				light = new THREE.AmbientLight(color);
+            			break;
+            		}
+        		}
+
+        		if (light)
+        		{
+                	this.resources.setEntry(entryID, light, description);	
+        		}
+        		
+        		return true;
             }
         },
 
@@ -695,10 +738,22 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
 
                 if (description.camera) {
                     var cameraEntry = this.resources.getEntry(description.camera);
-                    threeNode.add(cameraEntry.object);
-                    this.cameras.push(cameraEntry.object);
+                    if (cameraEntry) {
+                    	threeNode.add(cameraEntry.object);
+                    	this.cameras.push(cameraEntry.object);
+                    }
                 }
 
+                if (description.lights) {
+                	description.lights.forEach( function(lightID) {                	
+	                    var lightEntry = this.resources.getEntry(lightID);
+	                    if (lightEntry) {
+	                    	threeNode.add(lightEntry.object);
+	                    	this.lights.push(lightEntry.object);
+	                    }
+                	}, this);
+                }
+                
                 return true;
             }
         },
@@ -750,6 +805,8 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
         handleAnimation: {
             value: function(entryID, description, userInfo) {
 	            var animation = new Animation();
+	            this.animations.push(animation);
+	            
 	            animation.channels = description.channels;
 	            animation.samplers = description.samplers;
 	            this.resources.setEntry(entryID, animation, description);
@@ -870,6 +927,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
     loader.load(new Context(rootObj, 
     					function(obj) {
     						self.cameras = loader.cameras;
+    						self.animations = loader.animations;
     						callback(obj);
     					}), 
     			null);

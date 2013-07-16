@@ -36,11 +36,11 @@
 
         <script>
         	var orbitControls = null;
+            var camera, scene, renderer, loader;
         	
 			function onload() {
                 var container, stats;
 
-                var camera, scene, renderer, loader;
 
                 var mouseX = 0, mouseY = 0;
 
@@ -63,7 +63,7 @@
                     camera = defaultCamera;
 
                     var ambient = new THREE.AmbientLight( 0x444444 );
-                    scene.add( ambient );
+//                    scene.add( ambient );
 
                     /*var directionalLight = new THREE.DirectionalLight( 0xdddddd );
                     directionalLight.position.set( 0, -1, 1 ).normalize();
@@ -77,7 +77,7 @@
                     spot1.castShadow            = true;
                     spot1.shadowDarkness        = 0.5;
                     //spot1.shadowCameraVisible   = true;
-                    scene.add( spot1 );
+//                    scene.add( spot1 );
 
                     // RENDERER
 
@@ -97,18 +97,17 @@
                         });
                     var ground = new THREE.Mesh( new THREE.PlaneGeometry(1024, 1024), groundMaterial);
                     ground.receiveShadow = true;
-                    scene.add(ground);
+//                    scene.add(ground);
 
                     loader = new THREE.glTFLoader( renderer.context );
 
-                    // var objSrc = "../../model/duck/duck.json";
+                    var objSrc = "../../model/duck/duck.json";
                     // var objSrc = "../../model/wine/wine.json";
                     // var objSrc = "../../model/rambler/rambler.json";
                     // var objSrc = "../../model/SuperMurdoch/SuperMurdoch.json";
                     // var objSrc = "/glTFTests/vc/vc.json";
-                    // var objSrc = "/glTFTests/vc/vcskbox.json";
                     // var objSrc = "/glTFTests/minebot/mine_bot_anim.json";
-                    var objSrc = "/glTFTests/frigate/frigate.json";
+                    // var objSrc = "/glTFTests/frigate/frigate.json";
                     
                     var rootObj = loader.load( objSrc, function(object) {
 
@@ -124,14 +123,14 @@
 
                         // For the duck
                         defaultCamera.position.set(0, 3, 10);
-                        // object.scale.set(.01, .01, .01);
+                        object.scale.set(.01, .01, .01);
                         
                         // For the virtual city
-                        defaultCamera.position.set(0, 3, 10);
-                        // object.rotation.set(-Math.PI / 2, 0, 0);
+                        //defaultCamera.position.set(0, 3, 10);
+                        //object.rotation.set(-Math.PI / 2, 0, 0);
 
                         // For the frigate
-                        defaultCamera.position.set(0, 10, 50);
+                        // defaultCamera.position.set(0, 10, 50);
                         // object.rotation.set(-Math.PI / 2, 0, 0);
                         
                         if (loader.cameras && loader.cameras.length)
