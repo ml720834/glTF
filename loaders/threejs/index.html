@@ -33,6 +33,7 @@
         <script src="../webgl-tf-loader.js"></script>
         <script src="glTFLoader.js"></script>
         <script src="glTFLoaderUtils.js"></script>
+        <script src="glTFAnimation.js"></script>
 
         <script>
         	var orbitControls = null;
@@ -105,11 +106,11 @@
 
                     loader = new THREE.glTFLoader( renderer.context );
 
-                    var objSrc = "../../model/duck/duck.json";
+                    // var objSrc = "../../model/duck/duck.json";
                     // var objSrc = "../../model/wine/wine.json";
                     // var objSrc = "../../model/rambler/rambler.json";
                     // var objSrc = "../../model/SuperMurdoch/SuperMurdoch.json";
-                    // var objSrc = "/glTFTests/vc/vc.json";
+                    var objSrc = "/glTFTests/vc/vc.json";
                     // var objSrc = "/glTFTests/minebot/mine_bot_anim.json";
                     // var objSrc = "/glTFTests/frigate/frigate.json";
                     
@@ -126,12 +127,12 @@
                         rootObj.position.z = -20;*/
 
                         // For the duck
-                        defaultCamera.position.set(0, 3, 10);
-                        object.scale.set(.01, .01, .01);
+                        //defaultCamera.position.set(0, 3, 10);
+                        //object.scale.set(.01, .01, .01);
                         
                         // For the virtual city
-                        // defaultCamera.position.set(0, 3, 10);
-                        // object.rotation.set(-Math.PI / 2, 0, 0);
+                        defaultCamera.position.set(0, 3, 10);
+                        object.rotation.set(-Math.PI / 2, 0, 0);
 
                         // For the frigate
                         // defaultCamera.position.set(0, 10, 50);
@@ -179,6 +180,7 @@
                     //camera.lookAt( scene.position );
 
                     renderer.render( scene, camera );
+                    THREE.glTFAnimator.update();
                 }
 
                 

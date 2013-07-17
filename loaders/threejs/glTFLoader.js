@@ -732,6 +732,8 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                         m[2],  m[6],  m[10], m[14],
                         m[3],  m[7],  m[11], m[15]
                     ));
+                    
+                    threeNode.useQuaternion = true;
                 }
 
                 // Iterate through all node meshes and attach the appropriate objects
@@ -822,6 +824,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
         buildAnimation: {
         	value : function(animation) {
         	
+        		var interps = [];
 	            var i, len = animation.channels.length;
 	            for (i = 0; i < len; i++) {
 	            	
@@ -840,26 +843,35 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
 	            				if (node) {
 
 	            					var path = target.path;
-		            				if (path == "translation")
-		            					path = "position";
 		            				
 		            				if (path == "rotation")
 		            				{
 		            					convertAxisAngleToQuaternion(output.data, output.count);
 		            				}
 		            				
-			            			var track = {
+			            			var interp = {
 			            					keys : input.data,
 			            					values : output.data,
+			            					count : input.count,
 			            					target : node.object,
-			            					path : path
+			            					path : path,
+			            					type : sampler.interpolation
 			            			};
+			            			
+			            			interps.push(interp);
 	            				}
 	            			}
 	            		}
 	            	}
 	            }
 	            
+	            if (interps.length)
+	            {
+	            	var anim = new THREE.glTFAnimation(interps);
+	            	this.animations.push(anim);
+	            	anim.loop = true;
+	            	anim.play();
+	            }
         	}
         },
         
@@ -871,7 +883,6 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
 	            animation.onload = function() {
 	            	self.buildAnimation(animation);
 	            };	            
-	            this.animations.push(animation);
 	            
 	            animation.channels = description.channels;
 	            animation.samplers = description.samplers;
