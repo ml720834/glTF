@@ -837,16 +837,17 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
 	            				
 	            				var target = channel.target;
 	            				var node = this.resources.getEntry(target.id);
-	            				var path = target.path;
-	            				if (path == "translation")
-	            					path = "position";
-	            				
-	            				if (path == "rotation")
-	            				{
-	            					convertAxisAngleToQuaternion(output.data, output.count);
-	            				}
-	            				
 	            				if (node) {
+
+	            					var path = target.path;
+		            				if (path == "translation")
+		            					path = "position";
+		            				
+		            				if (path == "rotation")
+		            				{
+		            					convertAxisAngleToQuaternion(output.data, output.count);
+		            				}
+		            				
 			            			var track = {
 			            					keys : input.data,
 			            					values : output.data,
