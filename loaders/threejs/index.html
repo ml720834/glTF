@@ -30,10 +30,15 @@
             	position:absolute;
             	width:20%;
             	left:80%;
-            	top:70%;
-            	height:30%;
+            	top:80%;
+            	height:20%;
             	background-color:White;
-            	opacity:.5;
+            	opacity:.9;
+            	font: 13px/1.231 "Lucida Grande", Lucida, Verdana, sans-serif;
+            }
+            .control {
+            	position:absolute;
+            	left:40%;
             }
             #info a, .button { color: #f00; font-weight: bold; text-decoration: underline; cursor: pointer }
         </style>
@@ -47,7 +52,7 @@
 		</div>
 		<div id="controls">
 			Model
-			<select id="scenes_list" size="1" onchange="selectScene();" ondblclick="selectScene();">
+			<select class="control" id="scenes_list" size="1" onchange="selectScene();" ondblclick="selectScene();">
 			<option>Virtual City</option>
 			<option>Frigate</option>
 			<option>Minebot</option>
@@ -58,8 +63,10 @@
 			</select>
 			<br></br>
 			Camera
-			<select id="cameras_list" size="1" onchange="selectCamera();" ondblclick="selectCamera();">
+			<select class="control" id="cameras_list" size="1" onchange="selectCamera();" ondblclick="selectCamera();">
 			</select>
+			<br></br>
+			<div class="control"><input type="checkbox" checked onclick="toggleAnimations();">Play Animations</input></div>
 		</div>
         <script src="libs/three.js.r58/three.js"></script>
         <script src="libs/three.js.r58/controls/OrbitControls.js"></script>
@@ -289,7 +296,18 @@
 				}
 			}
 
-			
+			function toggleAnimations() {
+				var i, len = loader.animations.length;
+				for (i = 0; i < len; i++) {
+					var animation = loader.animations[i];
+					if (animation.running) {
+						animation.stop();
+					}
+					else {
+						animation.play();
+					}
+				}
+			}
 
             onload();
         </script>
