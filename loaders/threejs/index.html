@@ -46,8 +46,15 @@
 		<div id="container">
 		</div>
 		<div id="controls">
-			Scene
+			Model
 			<select id="scenes_list" size="1" onchange="selectScene();" ondblclick="selectScene();">
+			<option>Virtual City</option>
+			<option>Frigate</option>
+			<option>Minebot</option>
+			<option>Duck</option>
+			<option>Wine Rack</option>
+			<option>Rambler</option>
+			<option>Super Murdoch</option>
 			</select>
 			<br></br>
 			Camera
@@ -181,6 +188,7 @@
                             }
 
                             updateCamerasList();
+                            switchCamera(1);
                         }
                         
                         object.castShadow = true;
@@ -192,6 +200,8 @@
             		orbitControls = new THREE.OrbitControls(camera, renderer.domElement);
                     document.addEventListener( 'mousemove', onDocumentMouseMove, false );
     				window.addEventListener( 'resize', onWindowResize, false );
+                	document.addEventListener( 'keypress', 
+                			function(e) { onKeyPress(e); }, false );
 
                 }
 
@@ -229,6 +239,13 @@
                 
             }
             
+			function onKeyPress(event) {
+				var index = parseInt(String.fromCharCode(event.keyCode));
+				if (!isNaN(index)) {
+					switchCamera(index);
+				}
+			}
+
 			function switchCamera(index)
 			{
 				cameraIndex = index;
@@ -239,6 +256,9 @@
 				if (cameraIndex >= 1 && cameraIndex <= cameras.length) {
 					camera = cameras[cameraIndex - 1];
 				}
+
+				var elt = document.getElementById('cameras_list');
+				elt.selectedIndex = cameraIndex;				
 			}
 					
 			function updateCamerasList() {
