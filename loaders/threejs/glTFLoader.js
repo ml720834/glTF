@@ -5,6 +5,7 @@
 
 THREE.glTFLoader = function ( context, showStatus ) {
     THREE.Loader.call( this, showStatus );
+    this.yup = true;
 }
 
 THREE.glTFLoader.prototype = new THREE.Loader();
@@ -26,7 +27,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
         return color;
     }
     
-    function convertAxisAngleToQuaternion(rotations, count)
+    function convertAxisAngleToQuaternion(rotations, count, yup)
     {
     	var q = new THREE.Quaternion;
     	var axis = new THREE.Vector3;
@@ -380,6 +381,12 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
             }
         },
 
+        yup: {
+        	enumerable: true,
+        	writable: true,
+        	value : true
+        },
+        
         cameras: {
         	enumerable: true,
         	writable: true,
@@ -508,7 +515,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                 var opacity = 1.0;
                 if (values.transparency)
                 {
-                	var USE_A_ONE = false; // for now, hack because file format isn't telling us
+                	var USE_A_ONE = true; // for now, hack because file format isn't telling us
                 	opacity =  USE_A_ONE ? values.transparency.value : (1.0 - values.transparency.value);
                 }
                 
@@ -517,6 +524,10 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                 params.color = RgbArraytoHex(diffuseColor);
                 params.opacity = opacity;
                 params.transparent = opacity < 1.0;
+                // hack hack hack
+                if (texturePath && texturePath.toLowerCase().indexOf(".png") != -1)
+                	params.transparent = true;
+                
                 params.map = LoadTexture(texturePath);
                 if (!(shininess === undefined))
                 {
@@ -652,11 +663,12 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                 		{
                 			// N.B.: if no aspect ratio supplied, assume 1?
 	                		if (!aspect_ratio)
-	                			aspect_ratio = 1;
+	                			aspect_ratio = 3 / 4;
 	                		
                 			// According to COLLADA spec...
                 			// aspect_ratio = xfov / yfov
-                			yfov = 1 / (xfov * aspect_ratio);
+                			yfov = xfov / aspect_ratio;
+                			// yfov = 50;
                 		}
                 	}
                 	
@@ -846,7 +858,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
 		            				
 		            				if (path == "rotation")
 		            				{
-		            					convertAxisAngleToQuaternion(output.data, output.count);
+		            					convertAxisAngleToQuaternion(output.data, output.count, this.yup);
 		            				}
 		            				
 			            			var interp = {
@@ -1000,6 +1012,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
     var self = this;
     
     var loader = Object.create(ThreeGLTFLoader);
+    loader.yup = this.yup;
     loader.initWithPath(url);
     loader.load(new Context(rootObj, 
     					function(obj) {

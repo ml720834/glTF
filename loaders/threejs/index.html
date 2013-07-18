@@ -19,6 +19,22 @@
                 z-index: 100;
                 display:block;
             }
+            #container {
+            	position: absolute;
+            	top: 0px;
+            	width:80%;
+            	height:98%;
+            	z-index: -1;
+            }
+            #controls {
+            	position:absolute;
+            	width:20%;
+            	left:80%;
+            	top:70%;
+            	height:30%;
+            	background-color:White;
+            	opacity:.5;
+            }
             #info a, .button { color: #f00; font-weight: bold; text-decoration: underline; cursor: pointer }
         </style>
     </head>
@@ -27,7 +43,17 @@
         <div id="info">
         <a href="http://github.com/mrdoob/three.js" target="_blank">three.js</a> - glTF Loader
         </div>
-
+		<div id="container">
+		</div>
+		<div id="controls">
+			Scene
+			<select id="scenes_list" size="1" onchange="selectScene();" ondblclick="selectScene();">
+			</select>
+			<br></br>
+			Camera
+			<select id="cameras_list" size="1" onchange="selectCamera();" ondblclick="selectCamera();">
+			</select>
+		</div>
         <script src="libs/three.js.r58/three.js"></script>
         <script src="libs/three.js.r58/controls/OrbitControls.js"></script>
         <script src="../webgl-tf-loader.js"></script>
@@ -38,7 +64,12 @@
         <script>
         	var orbitControls = null;
             var camera, scene, renderer, loader;
-        	
+
+            var cameraIndex = 0;
+			var cameras = [];
+			var cameraNames = [];
+			var defaultCamera = null;
+                        
 			function onload() {
                 var container, stats;
 
@@ -52,12 +83,12 @@
                 animate();
 
                 function init() {
-                    container = document.createElement( 'div' );
+                    container = document.getElementById( 'container' );
                     document.body.appendChild( container );
 
                     scene = new THREE.Scene();
 
-                    var defaultCamera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
+                    defaultCamera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
                     
                     defaultCamera.up = new THREE.Vector3( 0, 1, 0 );
                     scene.add( defaultCamera );
@@ -111,6 +142,7 @@
                     // var objSrc = "../../model/rambler/rambler.json";
                     // var objSrc = "../../model/SuperMurdoch/SuperMurdoch.json";
                     var objSrc = "/glTFTests/vc/vc.json";
+                    loader.yup = false;
                     // var objSrc = "/glTFTests/minebot/mine_bot_anim.json";
                     // var objSrc = "/glTFTests/frigate/frigate.json";
                     
@@ -140,6 +172,15 @@
                         if (loader.cameras && loader.cameras.length)
                         {
                            // camera = loader.cameras[0];
+                            cameras = loader.cameras;
+                            cameraNames = [];
+                            var i, len = cameras.length;
+                            for (i = 0; i < len; i++)
+                            {
+                                cameraNames.push(cameras[i].parent.name);
+                            }
+
+                            updateCamerasList();
                         }
                         
                         object.castShadow = true;
@@ -151,13 +192,14 @@
             		orbitControls = new THREE.OrbitControls(camera, renderer.domElement);
                     document.addEventListener( 'mousemove', onDocumentMouseMove, false );
     				window.addEventListener( 'resize', onWindowResize, false );
+
                 }
 
                 function onDocumentMouseMove( event ) {
                     mouseX = ( event.clientX - windowHalfX ) / 2;
                     mouseY = ( event.clientY - windowHalfY ) / 2;
                 }
-                
+
 				function onWindowResize() {
 					
 //					camera.aspect = window.innerWidth / window.innerHeight;
@@ -170,7 +212,8 @@
                 function animate() {
                     requestAnimationFrame( animate );
                     render();
-                    orbitControls.update();
+                    if (cameraIndex == 0)
+                        orbitControls.update();
                 }
 
                 function render() {
@@ -185,6 +228,48 @@
 
                 
             }
+            
+			function switchCamera(index)
+			{
+				cameraIndex = index;
+				
+				if (cameraIndex == 0) {
+					camera = defaultCamera;
+				}
+				if (cameraIndex >= 1 && cameraIndex <= cameras.length) {
+					camera = cameras[cameraIndex - 1];
+				}
+			}
+					
+			function updateCamerasList() {
+				var elt = document.getElementById('cameras_list');
+				while( elt.hasChildNodes() ){
+				    elt.removeChild(elt.lastChild);
+				}
+
+				option = document.createElement("option");
+				option.text="[default]";
+				elt.add(option);
+				
+				var i, len = cameraNames.length;
+				for (i = 0; i < len; i++)
+				{
+					option = document.createElement("option");
+					option.text=cameraNames[i];
+					elt.add(option);
+				}		
+			}
+			
+			function selectCamera() {
+			    var select = document.getElementById("cameras_list");
+			    var index = select.selectedIndex;
+				if (index >= 0)
+				{
+					switchCamera(index);
+				}
+			}
+
+			
 
             onload();
         </script>
