@@ -533,7 +533,22 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                 {
                 	params.shininess = shininess;
                 }
-    		
+                
+                if (!(values.ambient === undefined) && !(typeof(values.ambient.value) == 'string'))
+                {
+                	params.ambient = RgbArraytoHex(values.ambient.value);
+                }
+
+                if (!(values.emission === undefined))
+                {
+                	params.emissive = RgbArraytoHex(values.emission.value);
+                }
+                
+                if (!(values.specular === undefined))
+                {
+                	params.specular = RgbArraytoHex(values.specular.value);
+                }
+
         		return materialType;
         		
         	}

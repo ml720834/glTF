@@ -247,9 +247,19 @@
             }
             
 			function onKeyPress(event) {
-				var index = parseInt(String.fromCharCode(event.keyCode));
-				if (!isNaN(index)) {
+				var chr = String.fromCharCode(event.keyCode);
+				if (chr == ' ')
+				{
+					index = cameraIndex + 1;
+					if (index > cameras.length)
+						index = 0;
 					switchCamera(index);
+				}
+				else {
+					var index = parseInt(chr);
+					if (!isNaN(index)) {
+						switchCamera(index);
+					}
 				}
 			}
 
