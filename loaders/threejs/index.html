@@ -26,6 +26,7 @@
             	height:98%;
             	z-index: -1;
             }
+            
             #controls {
             	position:absolute;
             	width:20%;
@@ -36,10 +37,35 @@
             	opacity:.9;
             	font: 13px/1.231 "Lucida Grande", Lucida, Verdana, sans-serif;
             }
+            
             .control {
             	position:absolute;
-            	left:40%;
+            	margin-left:8px;
+            	width:100%;
+            	font-weight:bold;
             }
+                        
+            .controlValue {
+            	position:absolute;
+            	left:40%;
+            	top:0%;
+            }
+            
+            #scenes_control {
+            	position:absolute;
+            	top:8px;
+            }
+
+            #cameras_control {
+            	position:absolute;
+            	top:40px;
+            }
+
+            #animations_control {
+            	position:absolute;
+            	top:72px;
+            }
+            
             #info a, .button { color: #f00; font-weight: bold; text-decoration: underline; cursor: pointer }
         </style>
     </head>
@@ -51,22 +77,21 @@
 		<div id="container">
 		</div>
 		<div id="controls">
-			Model
-			<select class="control" id="scenes_list" size="1" onchange="selectScene();" ondblclick="selectScene();">
-			<option>Virtual City</option>
-			<option>Frigate</option>
-			<option>Minebot</option>
-			<option>Duck</option>
-			<option>Wine Rack</option>
-			<option>Rambler</option>
-			<option>Super Murdoch</option>
-			</select>
-			<br></br>
-			Camera
-			<select class="control" id="cameras_list" size="1" onchange="selectCamera();" ondblclick="selectCamera();">
-			</select>
-			<br></br>
-			<div class="control"><input type="checkbox" checked onclick="toggleAnimations();">Play Animations</input></div>
+			<div class="control" id="scenes_control">
+				Model
+				<select class="controlValue" id="scenes_list" size="1" onchange="selectScene();" ondblclick="selectScene();">
+				</select>
+			</div>
+			
+			<div class="control" id="cameras_control">
+				Camera
+				<select class="controlValue" id="cameras_list" size="1" onchange="selectCamera();" ondblclick="selectCamera();">
+				</select>
+			</div>
+			<div class="control" id="animations_control">
+				Animations
+				<div class="controlValue"><input type="checkbox" checked onclick="toggleAnimations();">Play</input></div>
+			</div>
 		</div>
         <script src="libs/three.js.r58/three.js"></script>
         <script src="libs/three.js.r58/controls/OrbitControls.js"></script>
@@ -83,169 +108,173 @@
 			var cameras = [];
 			var cameraNames = [];
 			var defaultCamera = null;
+
+            var windowHalfX = window.innerWidth / 2;
+            var windowHalfY = window.innerHeight / 2;
                         
 			function onload() {
                 var container, stats;
 
+				window.addEventListener( 'resize', onWindowResize, false );
+            	document.addEventListener( 'keypress', 
+            			function(e) { onKeyPress(e); }, false );
 
-                var mouseX = 0, mouseY = 0;
 
-                var windowHalfX = window.innerWidth / 2;
-                var windowHalfY = window.innerHeight / 2;
-
-                init();
+                buildSceneList();
+                switchScene(1);
                 animate();
 
-                function init() {
-                    container = document.getElementById( 'container' );
-                    document.body.appendChild( container );
-
-                    scene = new THREE.Scene();
-
-                    defaultCamera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
-                    
-                    defaultCamera.up = new THREE.Vector3( 0, 1, 0 );
-                    scene.add( defaultCamera );
-                    camera = defaultCamera;
-
-                    // var ambient = new THREE.AmbientLight( 0x444444 );
-                    //scene.add( ambient );
-
-                    /*var directionalLight = new THREE.DirectionalLight( 0xdddddd );
-                    directionalLight.position.set( 0, -1, 1 ).normalize();
-                    scene.add( directionalLight );*/
-
-                    /*
-                    var spot1   = new THREE.SpotLight( 0x888888, 2 );
-                    spot1.position.set( -100, 200, 100 );
-                    spot1.target.position.set( 0, 0, 0 );
-                    spot1.shadowCameraNear      = 1;
-                    spot1.shadowCameraFar      = 1024;
-                    spot1.castShadow            = true;
-                    spot1.shadowDarkness        = 0.5;
-                    scene.add( spot1 );
-					*/
-					
-                    // RENDERER
-
-                    renderer = new THREE.WebGLRenderer({antialias:true});
-                    renderer.setSize( window.innerWidth, window.innerHeight );
-
-                    renderer.shadowMapEnabled = true;
-                    renderer.shadowMapSoft = true;
-            		renderer.shadowMapType = THREE.PCFSoftShadowMap;
-
-                    container.appendChild( renderer.domElement );
-
-                    var groundMaterial = new THREE.MeshPhongMaterial({
-                            color: 0xFFFFFF,
-                            ambient: 0x888888,
-                            shading: THREE.SmoothShading,
-                        });
-                    var ground = new THREE.Mesh( new THREE.PlaneGeometry(1024, 1024), groundMaterial);
-                    ground.receiveShadow = true;
-                    ground.position.z = -70;
-                    ground.rotation.x = -Math.PI / 2;
-                    
-                    // scene.add(ground);
-
-                    loader = new THREE.glTFLoader( renderer.context );
-
-                    // var objSrc = "../../model/duck/duck.json";
-                    // var objSrc = "../../model/wine/wine.json";
-                    // var objSrc = "../../model/rambler/rambler.json";
-                    // var objSrc = "../../model/SuperMurdoch/SuperMurdoch.json";
-                    var objSrc = "/glTFTests/vc/vc.json";
-                    loader.yup = false;
-                    // var objSrc = "/glTFTests/minebot/mine_bot_anim.json";
-                    // var objSrc = "/glTFTests/frigate/frigate.json";
-                    
-                    var rootObj = loader.load( objSrc, function(object) {
-
-                        // For the car
-                        /*camera.position.y = -250;
-                        rootObj.position.x = -200;
-                        rootObj.position.y = -100;*/
-
-                        // For the wine rack
-                        /*camera.position.y = -120;
-                        rootObj.position.x = -60;
-                        rootObj.position.z = -20;*/
-
-                        // For the duck
-                        //defaultCamera.position.set(0, 3, 10);
-                        //object.scale.set(.01, .01, .01);
-                        
-                        // For the virtual city
-                        defaultCamera.position.set(0, 3, 10);
-                        object.rotation.set(-Math.PI / 2, 0, 0);
-
-                        // For the frigate
-                        // defaultCamera.position.set(0, 10, 50);
-                        
-                        if (loader.cameras && loader.cameras.length)
-                        {
-                           // camera = loader.cameras[0];
-                            cameras = loader.cameras;
-                            cameraNames = [];
-                            var i, len = cameras.length;
-                            for (i = 0; i < len; i++)
-                            {
-                                cameraNames.push(cameras[i].parent.name);
-                            }
-
-                            updateCamerasList();
-                            switchCamera(1);
-                        }
-                        
-                        object.castShadow = true;
-
-                        scene.add( object );
-
-                    });
-
-            		orbitControls = new THREE.OrbitControls(camera, renderer.domElement);
-                    document.addEventListener( 'mousemove', onDocumentMouseMove, false );
-    				window.addEventListener( 'resize', onWindowResize, false );
-                	document.addEventListener( 'keypress', 
-                			function(e) { onKeyPress(e); }, false );
-
-                }
-
-                function onDocumentMouseMove( event ) {
-                    mouseX = ( event.clientX - windowHalfX ) / 2;
-                    mouseY = ( event.clientY - windowHalfY ) / 2;
-                }
-
-				function onWindowResize() {
-					
-//					camera.aspect = window.innerWidth / window.innerHeight;
-//					camera.updateProjectionMatrix();
-	
-					renderer.setSize( window.innerWidth, window.innerHeight );
-	
-				}
-
-                function animate() {
-                    requestAnimationFrame( animate );
-                    render();
-                    if (cameraIndex == 0)
-                        orbitControls.update();
-                }
-
-                function render() {
-                    //camera.position.x += ( mouseX - camera.position.x ) * .05;
-                    //camera.position.z += ( - mouseY - camera.position.z ) * .05;
-
-                    //camera.lookAt( scene.position );
-
-                    renderer.render( scene, camera );
-                    THREE.glTFAnimator.update();
-                }
-
-                
             }
+
+            function initScene(index) {
+                container = document.getElementById( 'container' );
+
+                scene = new THREE.Scene();
+
+                defaultCamera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
+                
+                defaultCamera.up = new THREE.Vector3( 0, 1, 0 );
+                scene.add( defaultCamera );
+                camera = defaultCamera;
+
+                // var ambient = new THREE.AmbientLight( 0x444444 );
+                //scene.add( ambient );
+
+                /*var directionalLight = new THREE.DirectionalLight( 0xdddddd );
+                directionalLight.position.set( 0, -1, 1 ).normalize();
+                scene.add( directionalLight );*/
+
+                /*
+                var spot1   = new THREE.SpotLight( 0x888888, 2 );
+                spot1.position.set( -100, 200, 100 );
+                spot1.target.position.set( 0, 0, 0 );
+                spot1.shadowCameraNear      = 1;
+                spot1.shadowCameraFar      = 1024;
+                spot1.castShadow            = true;
+                spot1.shadowDarkness        = 0.5;
+                scene.add( spot1 );
+				*/
+				
+                // RENDERER
+
+                renderer = new THREE.WebGLRenderer({antialias:true});
+                renderer.setSize( window.innerWidth, window.innerHeight );
+
+                renderer.shadowMapEnabled = true;
+                renderer.shadowMapSoft = true;
+        		renderer.shadowMapType = THREE.PCFSoftShadowMap;
+
+                container.appendChild( renderer.domElement );
+
+                var groundMaterial = new THREE.MeshPhongMaterial({
+                        color: 0xFFFFFF,
+                        ambient: 0x888888,
+                        shading: THREE.SmoothShading,
+                    });
+                var ground = new THREE.Mesh( new THREE.PlaneGeometry(1024, 1024), groundMaterial);
+                ground.receiveShadow = true;
+                ground.position.z = -70;
+                ground.rotation.x = -Math.PI / 2;
+                
+                // scene.add(ground);
+
+                loader = new THREE.glTFLoader( renderer.context );
+
+                // var objSrc = "../../model/duck/duck.json";
+                // var objSrc = "../../model/wine/wine.json";
+                // var objSrc = "../../model/rambler/rambler.json";
+                // var objSrc = "../../model/SuperMurdoch/SuperMurdoch.json";
+                var objSrc = "/glTFTests/vc/vc.json";
+                loader.yup = false;
+                // var objSrc = "/glTFTests/minebot/mine_bot_anim.json";
+                // var objSrc = "/glTFTests/frigate/frigate.json";
+                
+                var sceneInfo = sceneList[index];
+                var url = sceneInfo.url;
+                var rootObj = loader.load( url, function(object) {
+
+                    // For the car
+                    /*camera.position.y = -250;
+                    rootObj.position.x = -200;
+                    rootObj.position.y = -100;*/
+
+                    // For the wine rack
+                    /*camera.position.y = -120;
+                    rootObj.position.x = -60;
+                    rootObj.position.z = -20;*/
+
+                    // For the duck
+                    //defaultCamera.position.set(0, 3, 10);
+                    //object.scale.set(.01, .01, .01);
+                    
+                    // For the virtual city
+                    // defaultCamera.position.set(0, 3, 10);
+                    // object.rotation.set(-Math.PI / 2, 0, 0);
+
+                    // For the frigate
+                    // defaultCamera.position.set(0, 10, 50);
+                    
+                    if (sceneInfo.cameraPos)
+                        defaultCamera.position.copy(sceneInfo.cameraPos);
+
+                    if (sceneInfo.objectRotation)
+                        object.rotation.copy(sceneInfo.objectRotation);
+
+                    if (sceneInfo.objectScale)
+                        object.scale.copy(sceneInfo.objectScale);
+                    
+                    if (loader.cameras && loader.cameras.length)
+                    {
+                       // camera = loader.cameras[0];
+                        cameras = loader.cameras;
+                        cameraNames = [];
+                        var i, len = cameras.length;
+                        for (i = 0; i < len; i++)
+                        {
+                            cameraNames.push(cameras[i].parent.name);
+                        }
+
+                        updateCamerasList();
+                        switchCamera(1);
+                    }
+                    
+                    object.castShadow = true;
+
+                    scene.add( object );
+
+                });
+
+        		orbitControls = new THREE.OrbitControls(camera, renderer.domElement);
+            }
+
+			function onWindowResize() {
+				
+//				camera.aspect = window.innerWidth / window.innerHeight;
+//				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+            function animate() {
+                requestAnimationFrame( animate );
+                render();
+                if (cameraIndex == 0)
+                    orbitControls.update();
+            }
+
+            function render() {
+                //camera.position.x += ( mouseX - camera.position.x ) * .05;
+                //camera.position.z += ( - mouseY - camera.position.z ) * .05;
+
+                //camera.lookAt( scene.position );
+
+                renderer.render( scene, camera );
+                THREE.glTFAnimator.update();
+            }
+
             
+			
 			function onKeyPress(event) {
 				var chr = String.fromCharCode(event.keyCode);
 				if (chr == ' ')
@@ -257,12 +286,65 @@
 				}
 				else {
 					var index = parseInt(chr);
-					if (!isNaN(index)) {
+					if (!isNaN(index)  && (index <= cameras.length)) {
 						switchCamera(index);
 					}
 				}
 			}
 
+			var sceneList = 
+				[
+	                 { name : "Virtual City", url : "/glTFTests/vc/vc.json", 
+		                 cameraPos: new THREE.Vector3(0, 3, 10), objectRotation: new THREE.Vector3(-Math.PI / 2, 0, 0) },
+	                 { name : "Frigate", url : "/glTFTests/frigate/frigate.json", 
+		                 cameraPos: new THREE.Vector3(0, 10, 50) },
+	                 { name : "Minebot", url : "/glTFTests/minebot/mine_bot_anim.json", 
+		                 cameraPos: new THREE.Vector3(0, 10, 50) },
+	                 { name : "Duck", url : "../../model/duck/duck.json", 
+		                 cameraPos: new THREE.Vector3(0, 3, 10), objectScale: new THREE.Vector3(0.1, 0.1, 0.1) },
+	                 { name : "Wine Rack", url : "../../model/wine/wine.json", 
+		                 },
+	                 { name : "Rambler", url : "../../model/rambler/rambler.json", 
+	                 	},
+	                 { name : "Super Murdoch", url : "../../model/SuperMurdoch/SuperMurdoch.json", 
+	                 	},
+		             
+     			];
+
+			function buildSceneList()
+			{
+				var elt = document.getElementById('scenes_list');
+				while( elt.hasChildNodes() ){
+				    elt.removeChild(elt.lastChild);
+				}
+
+				var i, len = sceneList.length;
+				for (i = 0; i < len; i++)
+				{
+					option = document.createElement("option");
+					option.text=sceneList[i].name;
+					elt.add(option);
+				}		
+			}
+			
+			function switchScene(index)
+			{
+				stopAllAnimations();
+				initScene(index);
+				var elt = document.getElementById('scenes_list');
+				elt.selectedIndex = index;
+			}
+
+			function selectScene()
+			{
+			    var select = document.getElementById("scenes_list");
+			    var index = select.selectedIndex;
+				if (index >= 0)
+				{
+					switchScene(index);
+				}
+			}
+			
 			function switchCamera(index)
 			{
 				cameraIndex = index;
@@ -319,6 +401,19 @@
 				}
 			}
 
+			function stopAllAnimations() {
+				if (!loader || !loader.animations)
+					return;
+				
+				var i, len = loader.animations.length;
+				for (i = 0; i < len; i++) {
+					var animation = loader.animations[i];
+					if (animation.running) {
+						animation.stop();
+					}
+				}
+			}
+			
             onload();
         </script>
 
