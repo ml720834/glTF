@@ -30,16 +30,18 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
     {
     	var q = new THREE.Quaternion;
     	var axis = new THREE.Vector3;
+    	var euler = new THREE.Vector3;
     	
     	var i;
     	for (i = 0; i < count; i++) {
     		axis.set(rotations[i * 4], rotations[i * 4 + 1],
-    				rotations[i * 4 + 2]);
-    		q.setFromAxisAngle(axis, rotations[i * 4 + 3]);
+    				rotations[i * 4 + 2]).normalize();
+    		var angle = rotations[i * 4 + 3];
+    		q.setFromAxisAngle(axis, angle);
     		rotations[i * 4] = q.x;
     		rotations[i * 4 + 1] = q.y;
     		rotations[i * 4 + 2] = q.z;
-    		rotations[i * 4 + 3] = q.w;    		
+    		rotations[i * 4 + 3] = q.w;
     	}
     }
 
@@ -731,9 +733,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                         m[1],  m[5],  m[9],  m[13],
                         m[2],  m[6],  m[10], m[14],
                         m[3],  m[7],  m[11], m[15]
-                    ));
-                    
-                    threeNode.useQuaternion = true;
+                    ));                    
                 }
 
                 // Iterate through all node meshes and attach the appropriate objects

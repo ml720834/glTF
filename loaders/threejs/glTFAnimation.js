@@ -124,8 +124,9 @@ THREE.glTFInterpolator = function(param)
 			this.nComponents = 3;
 			break;
 		case "rotation" :
-			this.target = node.quaternion;
+			this.target = node.rotation;
 			this.nComponents = 4;
+			this.quaternion = new THREE.Quaternion;
 			break;
 		case "scale" :
 			this.target = node.scale;
@@ -201,7 +202,8 @@ THREE.glTFInterpolator.prototype.copyValue = function(from, target) {
 			target.set(from[0], from[1], from[2]);
 			break;
 		case "rotation" :
-			target.set(from[0], from[1], from[2], from[3]);
+			this.quaternion.set(from[0], from[1], from[2], from[3])
+			this.target.setEulerFromQuaternion(this.quaternion);
 			break;
 		case "scale" :
 			target.set(from[0], from[1], from[2]);
