@@ -203,7 +203,7 @@ THREE.glTFInterpolator.prototype.copyValue = function(from, target) {
 			break;
 		case "rotation" :
 			this.quaternion.set(from[0], from[1], from[2], from[3])
-			this.target.setEulerFromQuaternion(this.quaternion);
+			target.setEulerFromQuaternion(this.quaternion);
 			break;
 		case "scale" :
 			target.set(from[0], from[1], from[2]);
