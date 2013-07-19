@@ -377,6 +377,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                 this.cameras = [];
                 this.lights = [];
                 this.animations = [];
+                THREE.GLTFLoaderUtils.init();
                 WebGLTFLoader.load.call(this, userInfo, options);
             }
         },
@@ -519,7 +520,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                 	opacity =  USE_A_ONE ? values.transparency.value : (1.0 - values.transparency.value);
                 }
                 
-                if (diffuseColor) diffuseColor = [0, 1, 0];
+                // if (diffuseColor) diffuseColor = [0, 1, 0];
                                     
                 params.color = RgbArraytoHex(diffuseColor);
                 params.opacity = opacity;

@@ -21,6 +21,15 @@ THREE.GLTFLoaderUtils = Object.create(Object, {
 
     _resourcesStatus: { value: {}, writable: true },
 
+    // initialization
+    init: {
+        value: function() {
+	        this._streams = {};
+	        this._streamsStatus = {};
+            this._resources = {};
+            this._resourcesStatus = {};
+        }
+    },
 
     //manage entries
     _containsResource: {
@@ -101,8 +110,6 @@ THREE.GLTFLoaderUtils = Object.create(Object, {
             	this._resourcesStatus[request.id] = 1;
             }
             
-            this._resourcesStatus[request.id] =  { status : "loading"};
-
             var streamStatus = this._streamsStatus[request.path];
             if (streamStatus && streamStatus.status === "loading" )
             {
@@ -189,12 +196,6 @@ THREE.GLTFLoaderUtils = Object.create(Object, {
             }
 
             return null;
-        }
-    },
-
-    removeAllResources: {
-        value: function() {
-            this._resources = {};
         }
     },
 

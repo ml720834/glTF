@@ -126,7 +126,7 @@
             			function(e) { onKeyPress(e); }, false );
 
                 buildSceneList();
-                switchScene(2);
+                switchScene(3);
                 animate();
 
             }
@@ -138,20 +138,20 @@
 
                 defaultCamera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
                 
-                defaultCamera.up = new THREE.Vector3( 0, 1, 0 );
+                //defaultCamera.up = new THREE.Vector3( 0, 1, 0 );
                 scene.add( defaultCamera );
                 camera = defaultCamera;
-
-                var ambient = new THREE.AmbientLight( 0x444444 );
-                scene.add( ambient );
 
                 var sceneInfo = sceneList[index];
 
                 if (sceneInfo.addLights) {
+                    
+                    var ambient = new THREE.AmbientLight( 0x444444 );
+                    scene.add( ambient );
+
                 	var directionalLight = new THREE.DirectionalLight( 0xdddddd );
                 	directionalLight.position.set( 0, -1, 1 ).normalize();
                 	scene.add( directionalLight );
-
                 
 	                var spot1   = new THREE.SpotLight( 0x888888, 2 );
 	                spot1.position.set( -100, 200, 100 );
@@ -247,12 +247,12 @@
 
                     if (sceneInfo.objectScale)
                         object.scale.copy(sceneInfo.objectScale);
-                    
+
+                    cameraIndex = 0;
+                    cameras = loader.cameras;
+                    cameraNames = [];
                     if (loader.cameras && loader.cameras.length)
                     {
-                       // camera = loader.cameras[0];
-                        cameras = loader.cameras;
-                        cameraNames = [];
                         var i, len = cameras.length;
                         for (i = 0; i < len; i++)
                         {
@@ -321,11 +321,15 @@
 			var sceneList = 
 				[
 	                 { name : "Virtual City", url : "/glTFTests/vc/vc.json", 
-		                 cameraPos: new THREE.Vector3(0, 3, 10), objectRotation: new THREE.Vector3(-Math.PI / 2, 0, 0) },
+		                 cameraPos: new THREE.Vector3(0, 3, 10),
+		                 objectRotation: new THREE.Vector3(-Math.PI / 2, 0, 0) },
 	                 { name : "Frigate", url : "/glTFTests/frigate/frigate.json", 
-		                 cameraPos: new THREE.Vector3(0, 10, 50) },
+		                 cameraPos: new THREE.Vector3(0, 10, 50),
+		                 addGround:true },
 	                 { name : "Minebot", url : "/glTFTests/minebot/mine_bot_anim.json", 
-	                	 addLights:true},
+		                 cameraPos: new THREE.Vector3(0, 10, 50), 
+		             		objectScale: new THREE.Vector3(0.01, 0.01, 0.01),
+		                 addLights:true, addGround:true},
 	                 { name : "Duck", url : "../../model/duck/duck.json", 
 		                 cameraPos: new THREE.Vector3(0, 30, -50),
 		                 objectScale: new THREE.Vector3(0.1, 0.1, 0.1),
@@ -337,9 +341,15 @@
 		             	 objectPosition: new THREE.Vector3(-60, 0, -20),
 		             	 addLights:true },
 	                 { name : "Rambler", url : "../../model/rambler/rambler.json", 
-		             		cameraPos: new THREE.Vector3(0, 10, 50), addLights:true},
+		             		cameraPos: new THREE.Vector3(0, 10, 50), 
+		             		objectRotation: new THREE.Vector3(-Math.PI / 2, 0, 0),
+		             		objectPosition: new THREE.Vector3(0, 1, 0),
+		             		objectScale: new THREE.Vector3(0.1, 0.1, 0.1),
+		             		addLights:true, addGround:true},
 	                 { name : "Super Murdoch", url : "../../model/SuperMurdoch/SuperMurdoch.json", 
-		             			cameraPos: new THREE.Vector3(0, 10, 50), addLights:true},
+		             			cameraPos: new THREE.Vector3(0, 10, 50), 
+			             		objectScale: new THREE.Vector3(0.01, 0.01, 0.01),
+		             			addLights:true, addGround:true},
 		             
      			];
 
