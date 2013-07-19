@@ -244,10 +244,14 @@
             }
 
 			function onWindowResize() {
-				
-				defaultCamera.aspect = container.offsetWidth / container.offsetHeight;
-				defaultCamera.updateProjectionMatrix();
 
+				var i, len = cameras.length;
+				for (i = 0; i < len; i++)
+				{
+					cameras[i].aspect = container.offsetWidth / container.offsetHeight;
+					cameras[i].updateProjectionMatrix();
+				}
+				
 				renderer.setSize( container.offsetWidth, container.offsetHeight );
 
 			}
