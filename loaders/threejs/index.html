@@ -126,7 +126,7 @@
             			function(e) { onKeyPress(e); }, false );
 
                 buildSceneList();
-                switchScene(3);
+                switchScene(0);
                 animate();
 
             }
@@ -146,7 +146,7 @@
 
                 if (sceneInfo.addLights) {
                     
-                    var ambient = new THREE.AmbientLight( 0x444444 );
+                    var ambient = new THREE.AmbientLight( 0x111111 );
                     scene.add( ambient );
 
                 	var directionalLight = new THREE.DirectionalLight( 0xdddddd );
@@ -157,7 +157,7 @@
 	                spot1.position.set( -100, 200, 100 );
 	                spot1.target.position.set( 0, 0, 0 );
 
-	                if (sceneInfo.useShadows) {
+	                if (sceneInfo.shadows) {
 		                
 		                spot1.shadowCameraNear      = 1;
 		                spot1.shadowCameraFar      = 1024;
@@ -175,7 +175,7 @@
                 renderer = new THREE.WebGLRenderer({antialias:true});
                 renderer.setSize( container.offsetWidth, container.offsetHeight );
 
-                if (sceneInfo.useShadows) {
+                if (sceneInfo.shadows) {
 	                renderer.shadowMapEnabled = true;
 	                renderer.shadowMapSoft = true;
 	        		renderer.shadowMapType = THREE.PCFSoftShadowMap;
@@ -191,7 +191,7 @@
 	                    });
 	                var ground = new THREE.Mesh( new THREE.PlaneGeometry(1024, 1024), groundMaterial);
 
-	                if (sceneInfo.useShadows) {
+	                if (sceneInfo.shadows) {
 		                ground.receiveShadow = true;
 	                }
 	                
@@ -202,40 +202,8 @@
 				}
 				
                 loader = new THREE.glTFLoader( renderer.context );
+                loader.load( sceneInfo.url, function(object) {
 
-                // var objSrc = "../../model/duck/duck.json";
-                // var objSrc = "../../model/wine/wine.json";
-                // var objSrc = "../../model/rambler/rambler.json";
-                // var objSrc = "../../model/SuperMurdoch/SuperMurdoch.json";
-                var objSrc = "/glTFTests/vc/vc.json";
-                loader.yup = false;
-                // var objSrc = "/glTFTests/minebot/mine_bot_anim.json";
-                // var objSrc = "/glTFTests/frigate/frigate.json";
-                
-                var url = sceneInfo.url;
-                loader.load( url, function(object) {
-
-                    // For the car
-                    /*camera.position.y = -250;
-                    rootObj.position.x = -200;
-                    rootObj.position.y = -100;*/
-
-                    // For the wine rack
-                    /*camera.position.y = -120;
-                    rootObj.position.x = -60;
-                    rootObj.position.z = -20;*/
-
-                    // For the duck
-                    //defaultCamera.position.set(0, 3, 10);
-                    //object.scale.set(.01, .01, .01);
-                    
-                    // For the virtual city
-                    // defaultCamera.position.set(0, 3, 10);
-                    // object.rotation.set(-Math.PI / 2, 0, 0);
-
-                    // For the frigate
-                    // defaultCamera.position.set(0, 10, 50);
-                    
                     if (sceneInfo.cameraPos)
                         defaultCamera.position.copy(sceneInfo.cameraPos);
 
@@ -268,8 +236,6 @@
                         switchCamera(0);
                     }
                     
-//                    object.castShadow = true;
-
                     scene.add( object );
 
                 });
@@ -325,31 +291,35 @@
 		                 objectRotation: new THREE.Vector3(-Math.PI / 2, 0, 0) },
 	                 { name : "Frigate", url : "/glTFTests/frigate/frigate.json", 
 		                 cameraPos: new THREE.Vector3(0, 10, 50),
-		                 addGround:true },
+		                 addGround:false },
 	                 { name : "Minebot", url : "/glTFTests/minebot/mine_bot_anim.json", 
-		                 cameraPos: new THREE.Vector3(0, 10, 50), 
-		             		objectScale: new THREE.Vector3(0.01, 0.01, 0.01),
-		                 addLights:true, addGround:true},
+		                 cameraPos: new THREE.Vector3(0, 1, 3), 
+		                 addLights:true,
+		                 addGround:true },
 	                 { name : "Duck", url : "../../model/duck/duck.json", 
 		                 cameraPos: new THREE.Vector3(0, 30, -50),
 		                 objectScale: new THREE.Vector3(0.1, 0.1, 0.1),
 		                 addLights:true,
 		                 addGround:true,
-		                 useShadows:true},
+		                 shadows:true },
 	                 { name : "Wine Rack", url : "../../model/wine/wine.json",
 		             	 cameraPos: new THREE.Vector3(60, 30, 100), 
 		             	 objectPosition: new THREE.Vector3(-60, 0, -20),
 		             	 addLights:true },
 	                 { name : "Rambler", url : "../../model/rambler/rambler.json", 
-		             		cameraPos: new THREE.Vector3(0, 10, 50), 
-		             		objectRotation: new THREE.Vector3(-Math.PI / 2, 0, 0),
-		             		objectPosition: new THREE.Vector3(0, 1, 0),
-		             		objectScale: new THREE.Vector3(0.1, 0.1, 0.1),
-		             		addLights:true, addGround:true},
+			      		cameraPos: new THREE.Vector3(0, 10, 50), 
+			      		objectRotation: new THREE.Vector3(-Math.PI / 2, 0, 0),
+			      		objectPosition: new THREE.Vector3(0, 1, 0),
+			      		objectScale: new THREE.Vector3(0.1, 0.1, 0.1),
+			      		addLights:true,
+			      		addGround:true,
+			      		shadows:true },
 	                 { name : "Super Murdoch", url : "../../model/SuperMurdoch/SuperMurdoch.json", 
-		             			cameraPos: new THREE.Vector3(0, 10, 50), 
-			             		objectScale: new THREE.Vector3(0.01, 0.01, 0.01),
-		             			addLights:true, addGround:true},
+             			cameraPos: new THREE.Vector3(0, 10, 50), 
+	             		objectScale: new THREE.Vector3(0.01, 0.01, 0.01),
+             			addLights:true,
+             			addGround:true,
+             			shadows:true },
 		             
      			];
 

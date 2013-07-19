@@ -9717,7 +9717,7 @@
                     },
                     {
                         "parameter": "transparency",
-                        "value": 0.8
+                        "value": 0.2
                     }
                 ]
             },
@@ -9772,7 +9772,7 @@
                     },
                     {
                         "parameter": "transparency",
-                        "value": 0.8
+                        "value": 0.2
                     }
                 ]
             },
