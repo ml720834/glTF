@@ -136,7 +136,7 @@
 
                 scene = new THREE.Scene();
 
-                defaultCamera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
+                defaultCamera = new THREE.PerspectiveCamera( 45, container.offsetWidth / container.offsetHeight, 1, 10000 );
                 
                 //defaultCamera.up = new THREE.Vector3( 0, 1, 0 );
                 scene.add( defaultCamera );
@@ -201,7 +201,7 @@
 	                scene.add(ground);
 				}
 				
-                loader = new THREE.glTFLoader( renderer.context );
+                loader = new THREE.glTFLoader( container );
                 loader.load( sceneInfo.url, function(object) {
 
                     if (sceneInfo.cameraPos)

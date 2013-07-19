@@ -3,9 +3,9 @@
  */
 
 
-THREE.glTFLoader = function ( context, showStatus ) {
+THREE.glTFLoader = function ( container, showStatus ) {
+	this.container = container;
     THREE.Loader.call( this, showStatus );
-    this.yup = true;
 }
 
 THREE.glTFLoader.prototype = new THREE.Loader();
@@ -387,6 +387,12 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
         	writable: true,
         	value : true
         },
+
+        container: {
+        	enumerable: true,
+        	writable: true,
+        	value : null
+        },
         
         cameras: {
         	enumerable: true,
@@ -487,7 +493,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
         		}
         		
                 var texturePath = null;
-                
+                var textureParams = null;
                 var diffuse = values.diffuse;
                 if (diffuse)
                 {
@@ -497,13 +503,35 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                         if (textureEntry) {
                         	{
                         		var imageEntry = this.resources.getEntry(textureEntry.description.source);
-                        		if (imageEntry)
-                        		{
+                        		if (imageEntry) {
                         			texturePath = imageEntry.description.path;
+                        		}
+                        		
+                        		var samplerEntry = this.resources.getEntry(textureEntry.description.sampler);
+                        		if (samplerEntry) {
+                        			textureParams = samplerEntry.description;
                         		}
                         	}
                         }
                     }                    
+                }
+
+                var texture = LoadTexture(texturePath);
+                if (texture && textureParams) {
+                	
+                	if (textureParams.wrapS == "REPEAT")
+                		texture.wrapS = THREE.RepeatWrapping;
+
+                	if (textureParams.wrapT == "REPEAT")
+                		texture.wrapT = THREE.RepeatWrapping;
+                	
+                	if (textureParams.magFilter == "LINEAR")
+                		texture.magFilter = THREE.LinearFilter;
+
+//                	if (textureParams.minFilter == "LINEAR")
+//               		texture.minFilter = THREE.LinearFilter;
+                	
+                    params.map = texture;
                 }
                 
                 var shininess = values.shininesss || values.shininess; // N.B.: typo in converter!
@@ -529,7 +557,6 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                 if (texturePath && texturePath.toLowerCase().indexOf(".png") != -1)
                 	params.transparent = true;
                 
-                params.map = LoadTexture(texturePath);
                 if (!(shininess === undefined))
                 {
                 	params.shininess = shininess;
@@ -679,7 +706,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                 		{
                 			// N.B.: if no aspect ratio supplied, assume 1?
 	                		if (!aspect_ratio)
-	                			aspect_ratio = 3 / 4;
+	                			aspect_ratio = container.offsetWidth / container.offsetHeight;
 	                		
                 			// According to COLLADA spec...
                 			// aspect_ratio = xfov / yfov
@@ -1029,6 +1056,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
     
     var loader = Object.create(ThreeGLTFLoader);
     loader.yup = this.yup;
+    loader.container = this.container;
     loader.initWithPath(url);
     loader.load(new Context(rootObj, 
     					function(obj) {
