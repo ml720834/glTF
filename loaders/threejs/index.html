@@ -237,6 +237,7 @@
                     }
                     
                     scene.add( object );
+                    onWindowResize();
 
                 });
 
@@ -246,7 +247,7 @@
 			function onWindowResize() {
 
 				var i, len = cameras.length;
-				for (i = 0; i < len; i++)
+				for (i = 0; i < 1; i++) // just do it for default
 				{
 					cameras[i].aspect = container.offsetWidth / container.offsetHeight;
 					cameras[i].updateProjectionMatrix();
