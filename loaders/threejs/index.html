@@ -217,14 +217,23 @@
                         object.scale.copy(sceneInfo.objectScale);
 
                     cameraIndex = 0;
-                    cameras = loader.cameras;
+                    cameras = [];
                     cameraNames = [];
                     if (loader.cameras && loader.cameras.length)
                     {
-                        var i, len = cameras.length;
+                        var i, len = loader.cameras.length;
                         for (i = 0; i < len; i++)
                         {
-                            cameraNames.push(cameras[i].parent.name);
+                            var addCamera = true;
+                            var cameraName = loader.cameras[i].parent.name;
+                            if (sceneInfo.cameras && !(cameraName in sceneInfo.cameras)) {
+                                    addCamera = false;
+                            }
+
+                            if (addCamera) {
+                            	cameraNames.push(cameraName);
+                            	cameras.push(loader.cameras[i]);
+                            }
                         }
 
                         updateCamerasList();
@@ -247,7 +256,7 @@
 			function onWindowResize() {
 
 				var i, len = cameras.length;
-				for (i = 0; i < 1; i++) // just do it for default
+				for (i = 0; i < 0; i++) // just do it for default
 				{
 					cameras[i].aspect = container.offsetWidth / container.offsetHeight;
 					cameras[i].updateProjectionMatrix();
@@ -293,7 +302,8 @@
 				[
 	                 { name : "Virtual City", url : "/glTFTests/vc/vc.json", 
 		                 cameraPos: new THREE.Vector3(0, 3, 10),
-		                 objectRotation: new THREE.Vector3(-Math.PI / 2, 0, 0) },
+		                 objectRotation: new THREE.Vector3(-Math.PI / 2, 0, 0), 
+		                 cameras: {"Camera02" : "", "Camera05" : "", "Camera11" : "", "Camera15" : ""}},
 	                 { name : "Frigate", url : "/glTFTests/frigate/frigate.json", 
 		                 cameraPos: new THREE.Vector3(0, 10, 50),
 		                 addGround:false },
