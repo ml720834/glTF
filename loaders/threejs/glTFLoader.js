@@ -533,6 +533,48 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                 	
                     params.map = texture;
                 }
+
+                var envMapPath = null;
+                var envMapParams = null;
+                var reflective = values.reflective;
+                if (reflective)
+                {
+                	var texture = reflective.value;
+                    if (texture) {
+                        var textureEntry = this.resources.getEntry(texture);
+                        if (textureEntry) {
+                        	{
+                        		var imageEntry = this.resources.getEntry(textureEntry.description.source);
+                        		if (imageEntry) {
+                        			envMapPath = imageEntry.description.path;
+                        		}
+                        		
+                        		var samplerEntry = this.resources.getEntry(textureEntry.description.sampler);
+                        		if (samplerEntry) {
+                        			envMapParams = samplerEntry.description;
+                        		}
+                        	}
+                        }
+                    }                    
+                }
+
+                var texture = LoadTexture(envMapPath);
+                if (texture && envMapParams) {
+                	
+                	if (envMapParams.wrapS == "REPEAT")
+                		texture.wrapS = THREE.RepeatWrapping;
+
+                	if (envMapParams.wrapT == "REPEAT")
+                		texture.wrapT = THREE.RepeatWrapping;
+                	
+                	if (envMapParams.magFilter == "LINEAR")
+                		texture.magFilter = THREE.LinearFilter;
+
+//                	if (envMapParams.minFilter == "LINEAR")
+//               		texture.minFilter = THREE.LinearFilter;
+                	
+                    params.envMap = texture;
+                }
                 
                 var shininess = values.shininesss || values.shininess; // N.B.: typo in converter!
                 if (shininess)
