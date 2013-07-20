@@ -788,15 +788,15 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
             		
             		switch (type) {
             			case "directional" :
-            				light = new THREE.DirectionalLight();
+            				light = new THREE.DirectionalLight(color);
             			break;
             			
             			case "point" :
-            				light = new THREE.PointLight();
+            				light = new THREE.PointLight(color);
             			break;
             			
             			case "spot " :
-            				light = new THREE.SpotLight();
+            				light = new THREE.SpotLight(color);
             			break;
             			
             			case "ambient" : 
