@@ -116,29 +116,30 @@ THREE.glTFInterpolator = function(param)
 	this.count = param.count;
 	this.type = param.type;
 	this.path = param.path;
+	this.isRot = false;
 	
 	var node = param.target;
 	switch (param.path) {
 		case "translation" :
 			this.target = node.position;
-			this.nComponents = 3;
 			break;
 		case "rotation" :
 			this.target = node.rotation;
-			this.nComponents = 4;
-			this.quaternion = new THREE.Quaternion;
+			this.isRot = true;
 			break;
 		case "scale" :
 			this.target = node.scale;
-			this.nComponents = 3;
 			break;
 	}
 	
 	this.duration = this.keys[this.count - 1];
 	
-	this.tmp1 = new Array(this.nComponents);
-	this.tmp2 = new Array(this.nComponents);
-	this.tmp3 = new Array(this.nComponents);
+	this.vec1 = new THREE.Vector3;
+	this.vec2 = new THREE.Vector3;
+	this.vec3 = new THREE.Vector3;
+	this.quat1 = new THREE.Quaternion;
+	this.quat2 = new THREE.Quaternion;
+	this.quat3 = new THREE.Quaternion;
 }
 
 //Interpolation and tweening methods
@@ -147,16 +148,25 @@ THREE.glTFInterpolator.prototype.interp = function(t)
 	var i, j;
 	if (t == this.keys[0])
 	{
-		for (i = 0; i < this.nComponents; i++)
-		{
-			this.tmp3[i] = this.values[i];
+		if (this.path == "rotation") {
+			this.quat3.set(this.values[0], this.values[1], this.values[2], this.values[3]);
+		}
+		else {
+			this.vec3.set(this.values[0], this.values[1], this.values[2]);
 		}
 	}
 	else if (t >= this.keys[this.count - 1])
 	{
-		for (i = 0; i < this.nComponents; i++)
-		{
-			this.tmp3[i] = this.values[(this.count - 1) * this.nComponents + i];
+		if (this.path == "rotation") {
+			this.quat3.set(this.values[(this.count - 1) * 4], 
+					this.values[(this.count - 1) * 4 + 1],
+					this.values[(this.count - 1) * 4 + 2],
+					this.values[(this.count - 1) * 4 + 3]);
+		}
+		else {
+			this.vec3.set(this.values[(this.count - 1) * 3], 
+					this.values[(this.count - 1) * 3 + 1],
+					this.values[(this.count - 1) * 3 + 2]);
 		}
 	}
 	else
@@ -168,45 +178,49 @@ THREE.glTFInterpolator.prototype.interp = function(t)
 	
 			if (t >= key1 && t <= key2)
 			{
-				for (j = 0; j < this.nComponents; j++)
-				{
-					this.tmp1[j] = this.values[i * this.nComponents + j];
-					this.tmp2[j] = this.values[(i + 1) * this.nComponents + j];
+				if (this.path == "rotation") {
+					this.quat1.set(this.values[i * 4],
+							this.values[i * 4 + 1],
+							this.values[i * 4 + 2],
+							this.values[i * 4 + 3]);
+					this.quat2.set(this.values[(i + 1) * 4],
+							this.values[(i + 1) * 4 + 1],
+							this.values[(i + 1) * 4 + 2],
+							this.values[(i + 1) * 4 + 3]);
+					THREE.Quaternion.slerp(this.quat1, this.quat2, this.quat3, (t - key1) / (key2 - key1));
 				}
-
-				this.tween(this.tmp1, this.tmp2, this.tmp3, (t - key1) / (key2 - key1));
+				else {
+					this.vec3.set(this.values[i * 3],
+							this.values[i * 3 + 1],
+							this.values[i * 3 + 2]);
+					this.vec2.set(this.values[(i + 1) * 3],
+							this.values[(i + 1) * 3 + 1],
+							this.values[(i + 1) * 3 + 2]);
+	
+					this.vec3.lerp(this.vec2, (t - key1) / (key2 - key1));
+				}
 			}
 		}
 	}
 	
 	if (this.target)
 	{
-		this.copyValue(this.tmp3, this.target);
+		this.copyValue(this.target);
 	}
 }
 
-THREE.glTFInterpolator.prototype.tween = function(from, to, out, fract) {
-	var i;
-	for (i = 0; i < this.nComponents; i++) {
-		var range = to[i] - from[i];
-		var delta = range * fract;
-		out[ i ] = from[ i ] + delta;
-	}
-}
-
-THREE.glTFInterpolator.prototype.copyValue = function(from, target) {
+THREE.glTFInterpolator.prototype.copyValue = function(target) {
 	
 	switch (this.path) {
 	
 		case "translation" :
-			target.set(from[0], from[1], from[2]);
+			target.copy(this.vec3);
 			break;
 		case "rotation" :
-			this.quaternion.set(from[0], from[1], from[2], from[3])
-			target.setEulerFromQuaternion(this.quaternion);
+			target.setEulerFromQuaternion(this.quat3);
 			break;
 		case "scale" :
-			target.set(from[0], from[1], from[2]);
+			target.copy(this.vec3);
 			break;
 	}
 }
