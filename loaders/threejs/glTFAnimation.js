@@ -119,12 +119,15 @@ THREE.glTFInterpolator = function(param)
 	this.isRot = false;
 	
 	var node = param.target;
+	node.matrixAutoUpdate = true;
+	node.useQuaternion = true;
+	
 	switch (param.path) {
 		case "translation" :
 			this.target = node.position;
 			break;
 		case "rotation" :
-			this.target = node.rotation;
+			this.target = node.quaternion;
 			this.isRot = true;
 			break;
 		case "scale" :
@@ -148,7 +151,7 @@ THREE.glTFInterpolator.prototype.interp = function(t)
 	var i, j;
 	if (t == this.keys[0])
 	{
-		if (this.path == "rotation") {
+		if (this.isRot) {
 			this.quat3.set(this.values[0], this.values[1], this.values[2], this.values[3]);
 		}
 		else {
@@ -157,7 +160,7 @@ THREE.glTFInterpolator.prototype.interp = function(t)
 	}
 	else if (t >= this.keys[this.count - 1])
 	{
-		if (this.path == "rotation") {
+		if (this.isRot) {
 			this.quat3.set(this.values[(this.count - 1) * 4], 
 					this.values[(this.count - 1) * 4 + 1],
 					this.values[(this.count - 1) * 4 + 2],
@@ -178,7 +181,7 @@ THREE.glTFInterpolator.prototype.interp = function(t)
 	
 			if (t >= key1 && t <= key2)
 			{
-				if (this.path == "rotation") {
+				if (this.isRot) {
 					this.quat1.set(this.values[i * 4],
 							this.values[i * 4 + 1],
 							this.values[i * 4 + 2],
@@ -211,16 +214,10 @@ THREE.glTFInterpolator.prototype.interp = function(t)
 
 THREE.glTFInterpolator.prototype.copyValue = function(target) {
 	
-	switch (this.path) {
-	
-		case "translation" :
-			target.copy(this.vec3);
-			break;
-		case "rotation" :
-			target.setEulerFromQuaternion(this.quat3);
-			break;
-		case "scale" :
-			target.copy(this.vec3);
-			break;
+	if (this.isRot) {
+		target.copy(this.quat3);
 	}
+	else {
+		target.copy(this.vec3);
+	}		
 }
