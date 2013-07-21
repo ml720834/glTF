@@ -149,14 +149,14 @@ THREE.glTFInterpolator.prototype.interp = function(t)
 	{
 		for (i = 0; i < this.nComponents; i++)
 		{
-			this.tmp1[i] = this.values[i];
+			this.tmp3[i] = this.values[i];
 		}
 	}
 	else if (t >= this.keys[this.count - 1])
 	{
 		for (i = 0; i < this.nComponents; i++)
 		{
-			this.tmp1[i] = this.values[(this.count - 1) * this.nComponents + i];
+			this.tmp3[i] = this.values[(this.count - 1) * this.nComponents + i];
 		}
 	}
 	else
