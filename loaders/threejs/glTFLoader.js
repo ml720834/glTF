@@ -5,6 +5,7 @@
 
 THREE.glTFLoader = function ( container, showStatus ) {
 	this.container = container;
+	this.useBufferGeometry = true;
     THREE.Loader.call( this, showStatus );
 }
 
@@ -12,7 +13,9 @@ THREE.glTFLoader.prototype = new THREE.Loader();
 THREE.glTFLoader.prototype.constructor = THREE.glTFLoader;
 
 THREE.glTFLoader.prototype.load = function( url, callback ) {
-
+	
+	var theLoader = this;
+	
 	// Utilities
 
     function RgbArraytoHex(colorArray) {
@@ -73,7 +76,12 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
 
     var ClassicGeometry = function() {
 
-    	this.geometry = new THREE.Geometry;
+    	if (theLoader.useBufferGeometry) {
+    		this.geometry = new THREE.BufferGeometry;
+    	}
+    	else {
+    		this.geometry = new THREE.Geometry;
+    	}
         this.totalAttributes = 0;
         this.loadedAttributes = 0;
         this.indicesLoaded = false;
@@ -87,37 +95,68 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
 
     ClassicGeometry.prototype.constructor = ClassicGeometry;
 
+    ClassicGeometry.prototype.buildArrayGeometry = function() {
+
+    	// Build indexed mesh
+        var geometry = this.geometry;
+        var normals = geometry.normals;
+        var indexArray = this.indexArray;
+        var uvs = this.uvs;
+        var a, b, c;
+        var i, l;
+        var faceNormals = null;
+        var faceTexcoords = null;
+        
+        for(i = 0, l = this.indexArray.length; i < l; i += 3) {
+            a = indexArray[i];
+            b = indexArray[i+1];
+            c = indexArray[i+2];
+            if(normals) {
+                faceNormals = [normals[a], normals[b], normals[c]];
+            }
+            geometry.faces.push( new THREE.Face3( a, b, c, faceNormals, null, null ) );
+            if(uvs) {
+                geometry.faceVertexUvs[0].push([ uvs[a], uvs[b], uvs[c] ]);
+            }
+        }
+
+        // Allow Three.js to calculate some values for us
+        geometry.computeCentroids();
+        if(!normals) {
+            geometry.computeFaceNormals();
+        }
+
+    }
+
+    ClassicGeometry.prototype.buildBufferGeometry = function() {
+        // Build indexed mesh
+        var geometry = this.geometry;
+        geometry.attributes.index = {
+        		itemSize: 1,
+        		array : this.indexArray
+        };
+
+		var offset = {
+				start: 0,
+				index: 0,
+				count: this.indexArray.length
+			};
+
+		geometry.offsets.push( offset );
+
+        geometry.computeBoundingSphere();
+    }
+    
     ClassicGeometry.prototype.checkFinished = function() {
         if(this.indexArray && this.loadedAttributes === this.totalAttributes) {
-            // Build indexed mesh
-            var geometry = this.geometry;
-            var normals = geometry.normals;
-            var indexArray = this.indexArray;
-            var uvs = this.uvs;
-            var a, b, c;
-            var i, l;
-            var faceNormals = null;
-            var faceTexcoords = null;
-            
-            for(i = 0, l = this.indexArray.length; i < l; i += 3) {
-                a = indexArray[i];
-                b = indexArray[i+1];
-                c = indexArray[i+2];
-                if(normals) {
-                    faceNormals = [normals[a], normals[b], normals[c]];
-                }
-                geometry.faces.push( new THREE.Face3( a, b, c, faceNormals, null, null ) );
-                if(uvs) {
-                    geometry.faceVertexUvs[0].push([ uvs[a], uvs[b], uvs[c] ]);
-                }
-            }
-
-            // Allow Three.js to calculate some values for us
-            geometry.computeCentroids();
-            if(!normals) {
-                geometry.computeFaceNormals();
-            }
-
+        	
+        	if (theLoader.useBufferGeometry) {
+        		this.buildBufferGeometry();
+        	}
+        	else {
+        		this.buildArrayGeometry();
+        	}
+        	
             this.finished = true;
 
             if(this.onload) {
@@ -166,8 +205,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
 
 
 
-
-    VertexAttributeDelegate.prototype.resourceAvailable = function(glResource, ctx) {
+    VertexAttributeDelegate.prototype.arrayResourceAvailable = function(glResource, ctx) {
         var geom = ctx.geometry;
         var attribute = ctx.attribute;
         var semantic = ctx.semantic;
@@ -194,6 +232,54 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                 geom.uvs.push( new THREE.Vector2( floatArray[i], 1.0 - floatArray[i+1] ) );
             }
         }
+    }
+    
+    VertexAttributeDelegate.prototype.bufferResourceAvailable = function(glResource, ctx) {
+        var geom = ctx.geometry;
+        var attribute = ctx.attribute;
+        var semantic = ctx.semantic;
+        var floatArray;
+        var i, l;
+        var nComponents;
+        //FIXME: Float32 is assumed here, but should be checked.
+
+        if(semantic == "POSITION") {
+            // TODO: Should be easy to take strides into account here
+            floatArray = new Float32Array(glResource, 0, attribute.count * componentsPerElementForGLType(attribute.type));
+            geom.geometry.attributes.position = {
+            		itemSize: 3,
+            		array : floatArray
+            };
+        } else if(semantic == "NORMAL") {
+            floatArray = new Float32Array(glResource, 0, attribute.count * componentsPerElementForGLType(attribute.type));
+            geom.geometry.attributes.normal = {
+            		itemSize: 3,
+            		array : floatArray
+            };
+        } else if ((semantic == "TEXCOORD_0") || (semantic == "TEXCOORD" )) {
+        	
+        	nComponents = componentsPerElementForGLType(attribute.type);
+            floatArray = new Float32Array(glResource, 0, attribute.count * nComponents);
+            // N.B.: flip Y value... should we just set texture.flipY everywhere?
+            for (i = 0; i < floatArray.length / 2; i++) {
+            	floatArray[i*2+1] = 1.0 - floatArray[i*2+1];
+            }
+            geom.geometry.attributes.uv = {
+            		itemSize: nComponents,
+            		array : floatArray
+            };
+        }
+    }
+    
+    VertexAttributeDelegate.prototype.resourceAvailable = function(glResource, ctx) {
+    	if (theLoader.useBufferGeometry) {
+    		this.bufferResourceAvailable(glResource, ctx);
+    	}
+    	else {
+    		this.arrayResourceAvailable(glResource, ctx);
+    	}
+    	
+        var geom = ctx.geometry;
         geom.loadedAttributes++;
         geom.checkFinished();
         return true;
