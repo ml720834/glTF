@@ -938,6 +938,19 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                     }, this);
                 }
 
+                if (description.instanceSkin) {
+                	var skinEntry =  this.resources.getEntry(description.instanceSkin.skin);
+                	if (skinEntry) {
+                		var sources = description.instanceSkin.sources;
+                        sources.forEach( function(meshID) {
+                            meshEntry = this.resources.getEntry(meshID);
+                            meshEntry.object.onComplete(function(mesh) {
+                                mesh.attachToNode(threeNode);
+                            });
+                        }, this);
+                	}
+                }
+                
                 if (description.camera) {
                     var cameraEntry = this.resources.getEntry(description.camera);
                     if (cameraEntry) {
@@ -1125,7 +1138,8 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
 
         handleSkin: {
             value: function(entryID, description, userInfo) {
-            	// No skin handling at this time
+	    		// Save skin entry
+	    		this.resources.setEntry(entryID, description, description);
                 return true;
             }
         },
