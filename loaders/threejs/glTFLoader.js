@@ -340,6 +340,19 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
         });
     };
 
+    Mesh.prototype.attachSkinToNode = function(threeNode) {
+        // Assumes that the geometry is complete
+        this.primitives.forEach(function(primitive) {
+            /*if(!primitive.mesh) {
+                primitive.mesh = new THREE.Mesh(primitive.geometry, primitive.material);
+            }*/
+            var threeMesh = new THREE.SkinnedMesh(primitive.geometry.geometry, primitive.material, false);
+            primitive.material.side = THREE.FrontSide;
+            threeMesh.castShadow = true;
+            threeNode.add(threeMesh);
+        });
+    };
+    
     // Delegate for processing animation parameter buffers
     var AnimationParameterDelegate = function() {};
 
@@ -945,7 +958,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                         sources.forEach( function(meshID) {
                             meshEntry = this.resources.getEntry(meshID);
                             meshEntry.object.onComplete(function(mesh) {
-                                mesh.attachToNode(threeNode);
+                                mesh.attachSkinToNode(threeNode);
                             });
                         }, this);
                 	}
