@@ -6,6 +6,10 @@
 THREE.glTFLoader = function ( container, showStatus ) {
 	this.container = container;
 	this.useBufferGeometry = true;
+    this.meshesRequested = 0;
+    this.meshesLoaded = 0;
+    this.animationsRequested = 0;
+    this.animationsLoaded = 0;
     THREE.Loader.call( this, showStatus );
 }
 
@@ -15,7 +19,6 @@ THREE.glTFLoader.prototype.constructor = THREE.glTFLoader;
 THREE.glTFLoader.prototype.load = function( url, callback ) {
 	
 	var theLoader = this;
-	
 	// Utilities
 
     function RgbArraytoHex(colorArray) {
@@ -269,6 +272,22 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
             		array : floatArray
             };
         }
+        else if (semantic == "WEIGHT") {
+        	nComponents = componentsPerElementForGLType(attribute.type);
+            floatArray = new Float32Array(glResource, 0, attribute.count * nComponents);
+            geom.geometry.attributes.skinWeight = {
+            		itemSize: nComponents,
+            		array : floatArray
+            };        	
+        }
+        else if (semantic == "JOINT") {
+        	nComponents = componentsPerElementForGLType(attribute.type);
+            floatArray = new Float32Array(glResource, 0, attribute.count * nComponents);
+            geom.geometry.attributes.skinIndex = {
+            		itemSize: nComponents,
+            		array : floatArray
+            };        	
+        }
     }
     
     VertexAttributeDelegate.prototype.resourceAvailable = function(glResource, ctx) {
@@ -340,7 +359,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
         });
     };
 
-    Mesh.prototype.attachSkinToNode = function(threeNode) {
+    Mesh.prototype.attachSkinToNode = function(threeNode, bones) {
         // Assumes that the geometry is complete
         this.primitives.forEach(function(primitive) {
             /*if(!primitive.mesh) {
@@ -348,6 +367,9 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
             }*/
             var threeMesh = new THREE.SkinnedMesh(primitive.geometry.geometry, primitive.material, false);
             primitive.material.side = THREE.FrontSide;
+            /* Don't do this 'till we have skinning really working, crashes
+            primitive.material.skinning = true;
+            */
             threeMesh.castShadow = true;
             threeNode.add(threeMesh);
         });
@@ -932,21 +954,29 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                     ));                    
                 }
 
+                var self = this;
+                
                 // Iterate through all node meshes and attach the appropriate objects
                 //FIXME: decision needs to be made between these 2 ways, probably meshes will be discarded.
                 var meshEntry;
                 if (description.mesh) {
                     meshEntry = this.resources.getEntry(description.mesh);
+                    theLoader.meshesRequested++;
                     meshEntry.object.onComplete(function(mesh) {
                         mesh.attachToNode(threeNode);
+                        theLoader.meshesLoaded++;
+                        theLoader.checkComplete();
                     });
                 }
 
                 if (description.meshes) {
                     description.meshes.forEach( function(meshID) {
                         meshEntry = this.resources.getEntry(meshID);
+                        theLoader.meshesRequested++;
                         meshEntry.object.onComplete(function(mesh) {
                             mesh.attachToNode(threeNode);
+                            theLoader.meshesLoaded++;
+                            theLoader.checkComplete();
                         });
                     }, this);
                 }
@@ -954,14 +984,31 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                 if (description.instanceSkin) {
                 	var skinEntry =  this.resources.getEntry(description.instanceSkin.skin);
                 	if (skinEntry) {
+                		var bones = [];
+                        var joints = skinEntry.description.joints;
+                        var that = this;
+                        joints.forEach( function(jointID){
+                        	var jointEntry = that.resources.getEntry(jointID);
+//                        	bones.push(jointEntry.object);
+                        });
+                        
                 		var sources = description.instanceSkin.sources;
                         sources.forEach( function(meshID) {
                             meshEntry = this.resources.getEntry(meshID);
+                            theLoader.meshesRequested++;
                             meshEntry.object.onComplete(function(mesh) {
-                                mesh.attachSkinToNode(threeNode);
+                                mesh.attachSkinToNode(threeNode, bones);
+                                theLoader.meshesLoaded++;
+                                theLoader.checkComplete();
                             });
                         }, this);
+                        
                 	}
+                }
+                
+                // N.B.: is this correct? Or jointID namespace might overlap w node name space?
+                if (description.jointId) {
+                	this.resources.setEntry(description.jointId, threeNode, description);
                 }
                 
                 if (description.camera) {
@@ -1088,9 +1135,12 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
             value: function(entryID, description, userInfo) {
         	
         		var self = this;
+	            theLoader.animationsRequested++;
 	            var animation = new Animation();
 	            animation.onload = function() {
 	            	self.buildAnimation(animation);
+	            	theLoader.animationsLoaded++;
+                    theLoader.checkComplete();
 	            };	            
 	            
 	            animation.channels = description.channels;
@@ -1215,13 +1265,25 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
     loader.initWithPath(url);
     loader.load(new Context(rootObj, 
     					function(obj) {
-    						self.cameras = loader.cameras;
-    						self.animations = loader.animations;
-    						callback(obj);
     					}), 
     			null);
 
+    this.loader = loader;
+    this.callback = callback;
+    this.rootObj = rootObj;
     return rootObj;
 }
+
+THREE.glTFLoader.prototype.checkComplete = function()
+{
+	if (this.meshesLoaded == this.meshesRequested 
+			&& this.animationsLoaded == this.animationsRequested)
+	{
+		this.cameras = this.loader.cameras;
+		this.animations = this.loader.animations;
+		this.callback(this.rootObj);
+	}
+}
+
 
 

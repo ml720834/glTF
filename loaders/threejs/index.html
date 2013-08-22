@@ -39,11 +39,21 @@
                         
             #controls {
             	position:absolute;
-            	width:20%;
-            	left:80%;
+            	width:25%;
+            	left:75%;
             	top:80%;
             	height:20%;
             	background-color:White;
+            	opacity:.9;
+            	font: 13px/1.231 "Lucida Grande", Lucida, Verdana, sans-serif;
+            }
+
+            #status {
+            	position:absolute;
+            	width:25%;
+            	left:2%;
+            	top:95%;
+            	height:5%;
             	opacity:.9;
             	font: 13px/1.231 "Lucida Grande", Lucida, Verdana, sans-serif;
             }
@@ -57,7 +67,7 @@
                         
             .controlValue {
             	position:absolute;
-            	left:40%;
+            	left:50%;
             	top:0%;
             }
             
@@ -76,6 +86,11 @@
             	top:72px;
             }
             
+            #buffer_geometry_control {
+            	position:absolute;
+            	top:104px;
+            }
+                        
             #info a, .button { color: #f00; font-weight: bold; text-decoration: underline; cursor: pointer }
         </style>
     </head>
@@ -85,6 +100,8 @@
         <a href="http://github.com/mrdoob/three.js" target="_blank">three.js</a> - glTF Loader
         </div>
 		<div id="container">
+		</div>
+		<div id="status">
 		</div>
 		<div id="controls">
 			<div class="control" id="scenes_control">
@@ -101,6 +118,10 @@
 			<div class="control" id="animations_control">
 				Animations
 				<div class="controlValue"><input type="checkbox" checked onclick="toggleAnimations();">Play</input></div>
+			</div>
+			<div class="control" id="buffer_geometry_control">
+				Geometry
+				<div class="controlValue"><input type="checkbox" checked onclick="toggleBufferGeometry();">BufferGeometry</input></div>
 			</div>
 		</div>
         <script src="libs/three.js.r58/three.js"></script>
@@ -202,9 +223,19 @@
 				}
 				
                 loader = new THREE.glTFLoader( container );
+                loader.useBufferGeometry = useBufferGeometry;
+                var loadStartTime = Date.now();
+                var status = document.getElementById("status");
+                status.innerHTML = "Loading...";
                 loader.load( sceneInfo.url, function(object) {
 
-                    if (sceneInfo.cameraPos)
+                    var loadEndTime = Date.now();
+
+                    var loadTime = (loadEndTime - loadStartTime) / 1000;
+
+                    status.innerHTML = "Load time: " + loadTime.toFixed(2) + " seconds.";
+                    
+                	if (sceneInfo.cameraPos)
                         defaultCamera.position.copy(sceneInfo.cameraPos);
 
                     if (sceneInfo.objectPosition)
@@ -316,6 +347,10 @@
 			                 cameraPos: new THREE.Vector3(0, 1, 10), 
 			                 addLights:true,
 			                 addGround:true },
+		             { name : "Razer", url : "/glTFTests/razer_tablet_keyboard/razer_tablet_keyboard.json", 
+		                 cameraPos: new THREE.Vector3(0, 1, 10), 
+		                 addLights:true,
+		                 addGround:false },
 	                 { name : "Frigate", url : "/glTFTests/frigate/frigate.json", 
 		                 cameraPos: new THREE.Vector3(0, 10, 50),
 		                 addGround:false },
@@ -440,6 +475,13 @@
 				}
 			}
 
+			var useBufferGeometry = true;
+			function toggleBufferGeometry()
+			{
+				useBufferGeometry = !useBufferGeometry;
+				selectScene();
+			}
+			
 			function cleanup() {
 
 				if (container && renderer)
