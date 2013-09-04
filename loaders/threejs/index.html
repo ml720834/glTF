@@ -280,7 +280,16 @@
                         updateCamerasList();
                         switchCamera(0);
                     }
-                    
+
+    				if (gltf.animations && gltf.animations.length) {
+    					var i, len = gltf.animations.length;
+	    				for (i = 0; i < len; i++) {
+	    					var animation = gltf.animations[i];
+	    					animation.loop = true;
+    						animation.play();
+	    				}
+    				}
+                                       
                     scene.add( object );
                     onWindowResize();
 
