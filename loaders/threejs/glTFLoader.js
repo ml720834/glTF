@@ -124,9 +124,12 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
         }
 
         // Allow Three.js to calculate some values for us
+        geometry.computeBoundingBox();
+        geometry.computeBoundingSphere();
         geometry.computeCentroids();
+        geometry.computeFaceNormals();
         if(!normals) {
-            geometry.computeFaceNormals();
+            geometry.computeVertexNormals();
         }
 
     }
@@ -909,6 +912,8 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
             		switch (type) {
             			case "directional" :
             				light = new THREE.DirectionalLight(color);
+            				// This seems like a more sensible default
+            				light.position.set(0, 0, 1);
             			break;
             			
             			case "point" :
