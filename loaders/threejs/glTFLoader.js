@@ -5,11 +5,13 @@
 
 THREE.glTFLoader = function ( container, showStatus ) {
 	this.container = container;
-	this.useBufferGeometry = true;
+	this.useBufferGeometry = (THREE.glTFLoader.useBufferGeometry !== undefined ) ?
+			THREE.glTFLoader.useBufferGeometry : true;
     this.meshesRequested = 0;
     this.meshesLoaded = 0;
     this.animationsRequested = 0;
     this.animationsLoaded = 0;
+    this.animations = [];
     THREE.Loader.call( this, showStatus );
 }
 
@@ -871,7 +873,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                 		{
                 			// N.B.: if no aspect ratio supplied, assume 1?
 	                		if (!aspect_ratio)
-	                			aspect_ratio = 4 / 3; // container.offsetWidth / container.offsetHeight;
+	                			aspect_ratio = container.offsetWidth / container.offsetHeight; // 4 / 3; // 
 	                		
                 			// According to COLLADA spec...
                 			// aspect_ratio = xfov / yfov
@@ -912,8 +914,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
             		switch (type) {
             			case "directional" :
             				light = new THREE.DirectionalLight(color);
-            				// This seems like a more sensible default
-            				light.position.set(0, 0, 1);
+    						light.position.set(0, 0, 1);
             			break;
             			
             			case "point" :
@@ -922,6 +923,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
             			
             			case "spot " :
             				light = new THREE.SpotLight(color);
+    						light.position.set(0, 0, 1);
             			break;
             			
             			case "ambient" : 
@@ -1101,6 +1103,35 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
             }
         },
         
+        addNodeAnimationChannel : {
+        	value : function(name, channel, interp) {
+        		if (!this.nodeAnimationChannels)
+        			this.nodeAnimationChannels = {};
+        		
+        		if (!this.nodeAnimationChannels[name]) {
+        			this.nodeAnimationChannels[name] = [];
+        		}
+        		
+        		this.nodeAnimationChannels[name].push(interp);
+        	},
+        },
+        
+        createAnimations : {
+        	value : function() {
+        		for (var name in this.nodeAnimationChannels) {
+        			var nodeAnimationChannels = this.nodeAnimationChannels[name];
+        			var i, len = nodeAnimationChannels.length;
+        			//console.log(" animation channels for node " + name);
+        			//for (i = 0; i < len; i++) {
+        			//	console.log(nodeAnimationChannels[i]);
+        			//}
+	            	var anim = new THREE.glTFAnimation(nodeAnimationChannels);
+	            	anim.name = "animation_" + name;
+	            	this.animations.push(anim);        				
+        		}
+        	}
+        },
+        
         buildAnimation: {
         	value : function(animation) {
         	
@@ -1138,18 +1169,13 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
 			            					type : sampler.interpolation
 			            			};
 			            			
+			            			this.addNodeAnimationChannel(target.id, channel, interp);
 			            			interps.push(interp);
 	            				}
 	            			}
 	            		}
 	            	}
-	            }
-	            
-	            if (interps.length)
-	            {
-	            	var anim = new THREE.glTFAnimation(interps);
-	            	this.animations.push(anim);
-	            }
+	            }	            
         	}
         },
         
@@ -1159,9 +1185,11 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
         		var self = this;
 	            theLoader.animationsRequested++;
 	            var animation = new Animation();
+                animation.name = entryID;
 	            animation.onload = function() {
-	            	self.buildAnimation(animation);
+	            	// self.buildAnimation(animation);
 	            	theLoader.animationsLoaded++;
+	            	theLoader.animations.push(animation);
                     theLoader.checkComplete();
 	            };	            
 	            
@@ -1310,6 +1338,11 @@ THREE.glTFLoader.prototype.checkComplete = function() {
 	if (this.meshesLoaded == this.meshesRequested 
 			&& this.animationsLoaded == this.animationsRequested)
 	{
+		for (var i = 0; i < this.animationsLoaded; i++) {
+			var animation = this.animations[i];
+			this.loader.buildAnimation(animation);
+		}
+		this.loader.createAnimations();
 		this.callLoadedCallback();
 	}
 }
