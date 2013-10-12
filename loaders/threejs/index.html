@@ -41,8 +41,8 @@
             	position:absolute;
             	width:25%;
             	left:75%;
-            	top:80%;
-            	height:20%;
+            	bottom:0%;
+            	height:134px;
             	background-color:White;
             	opacity:.9;
             	font: 13px/1.231 "Lucida Grande", Lucida, Verdana, sans-serif;
@@ -60,7 +60,7 @@
             
             .control {
             	position:absolute;
-            	margin-left:8px;
+            	margin-left:12px;
             	width:100%;
             	font-weight:bold;
             }
@@ -121,11 +121,13 @@
 			</div>
 			<div class="control" id="buffer_geometry_control">
 				Geometry
-				<div class="controlValue"><input type="checkbox" checked onclick="toggleBufferGeometry();">BufferGeometry</input></div>
+				<div class="controlValue">
+				<input type="checkbox" id="buffer_geometry_checkbox" checked onclick="toggleBufferGeometry();">BufferGeometry</input>
+				</div>
 			</div>
 		</div>
-        <script src="libs/three.js.r58/three.js"></script>
-        <script src="libs/three.js.r58/controls/OrbitControls.js"></script>
+        <script src="libs/three.js.r59/three.js"></script>
+        <script src="libs/three.js.r59/controls/OrbitControls.js"></script>
         <script src="../webgl-tf-loader.js"></script>
         <script src="glTFLoader.js"></script>
         <script src="glTFLoaderUtils.js"></script>
@@ -347,13 +349,13 @@
 				[
 	                 { name : "Virtual City", url : "/glTFTests/vc/vc.json", 
 		                 cameraPos: new THREE.Vector3(0, 3, 10),
-		                 objectRotation: new THREE.Vector3(-Math.PI / 2, 0, 0), 
+		                 objectRotation: new THREE.Euler(-Math.PI / 2, 0, 0), 
 		                 cameras: {"Camera02" : "", "Camera05" : "", "Camera11" : "", "Camera15" : ""}},
 		             { name : "Monster", url : "/glTFTests/monster/monster.json", 
 			                 cameraPos: new THREE.Vector3(0, 1, 100), 
 			                 objectScale: new THREE.Vector3(0.01, 0.01, 0.01),
 			                 objectPosition: new THREE.Vector3(0, 9, 0),
-			                 objectRotation: new THREE.Vector3(0, -Math.PI / 2, 0),
+			                 objectRotation: new THREE.Euler(0, -Math.PI / 2, 0),
 			                 addLights:true,
 			                 shadows:true,
 			                 addGround:true },
@@ -384,7 +386,7 @@
 		             	 addLights:true },
 	                 { name : "Rambler", url : "../../model/rambler/Rambler.json", 
 			      		cameraPos: new THREE.Vector3(0, 10, 50), 
-			      		objectRotation: new THREE.Vector3(-Math.PI / 2, 0, 0),
+			      		objectRotation: new THREE.Euler(-Math.PI / 2, 0, 0),
 			      		objectPosition: new THREE.Vector3(0, 1, 0),
 			      		objectScale: new THREE.Vector3(0.1, 0.1, 0.1),
 			      		addLights:true,
@@ -489,7 +491,8 @@
 				}
 			}
 
-			var useBufferGeometry = true;
+			var usebuf = document.getElementById("buffer_geometry_checkbox");
+			var useBufferGeometry = usebuf.hasAttribute("checked");
 			function toggleBufferGeometry()
 			{
 				useBufferGeometry = !useBufferGeometry;

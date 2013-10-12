@@ -240,6 +240,20 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                 geom.uvs.push( new THREE.Vector2( floatArray[i], 1.0 - floatArray[i+1] ) );
             }
         }
+        else if (semantic == "WEIGHT") {
+        	nComponents = componentsPerElementForGLType(attribute.type);
+            floatArray = new Float32Array(glResource, 0, attribute.count * nComponents);
+            for(i = 0, l = floatArray.length; i < l; i += 4) {
+            	geom.geometry.skinWeights.push( new THREE.Vector4( floatArray[i], floatArray[i+1], floatArray[i+2], floatArray[i+3] ) );
+            }
+        }
+        else if (semantic == "JOINT") {
+        	nComponents = componentsPerElementForGLType(attribute.type);
+            floatArray = new Float32Array(glResource, 0, attribute.count * nComponents);
+            for(i = 0, l = floatArray.length; i < l; i += 4) {
+            	geom.geometry.skinIndices.push( new THREE.Vector4( floatArray[i], floatArray[i+1], floatArray[i+2], floatArray[i+3] ) );
+            }
+        }
     }
     
     VertexAttributeDelegate.prototype.bufferResourceAvailable = function(glResource, ctx) {
