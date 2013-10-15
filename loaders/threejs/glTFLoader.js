@@ -377,7 +377,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
         });
     };
 
-    Mesh.prototype.attachSkinToNode = function(threeNode, bones) {
+    Mesh.prototype.attachSkinToNode = function(threeNode) {
         // Assumes that the geometry is complete
         this.primitives.forEach(function(primitive) {
             /*if(!primitive.mesh) {
@@ -465,6 +465,42 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
         }
     };
     
+    // Delegate for processing inverse bind matrices buffer
+    var InverseBindMatricesDelegate = function() {};
+
+    InverseBindMatricesDelegate.prototype.handleError = function(errorCode, info) {
+        // FIXME: report error
+        console.log("ERROR(InverseBindMatricesDelegate):"+errorCode+":"+info);
+    };
+
+    InverseBindMatricesDelegate.prototype.convert = function(resource, ctx) {
+    	var parameter = ctx.parameter;
+
+    	var glResource = null;
+    	switch (parameter.type) {
+	        case "FLOAT_MAT4" :
+	        	glResource = new Float32Array(resource, 0, parameter.count * componentsPerElementForGLType(parameter.type));
+	        	break;
+	        default:
+	        	break;
+    	}
+    	
+        return glResource;
+    };
+
+    InverseBindMatricesDelegate.prototype.resourceAvailable = function(glResource, ctx) {
+    	var skin = ctx.skin;
+    	skin.inverseBindMatrices = glResource;
+        return true;
+    };
+
+    var inverseBindMatricesDelegate = new InverseBindMatricesDelegate();
+
+    var InverseBindMatricesContext = function(param, skin) {
+    	this.parameter = param;
+        this.skin = skin;
+    };
+
     // Resource management
 
     var ResourceEntry = function(entryID, object, description) {
@@ -516,6 +552,8 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                 this.cameras = [];
                 this.lights = [];
                 this.animations = [];
+                this.joints = {};
+                this.skeltons = {};
                 THREE.GLTFLoaderUtils.init();
                 WebGLTFLoader.load.call(this, userInfo, options);
             }
@@ -598,7 +636,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
         threeJSMaterialType : {
             value: function(technique, values, params) {
         	
-        		var materialType = THREE.MeshBasicMaterial;
+        		var materialType = THREE.MeshPhongMaterial;
         
         		if (technique && technique.description && technique.description.passes &&
         				technique.description.passes.defaultPass && technique.description.passes.defaultPass.details &&
@@ -960,7 +998,11 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
 
                 var threeNode = new THREE.Object3D();
                 threeNode.name = description.name;
-
+                if (description.jointId) {
+	                threeNode.jointId = description.jointId;
+	                this.joints[description.jointId] = entryID;
+                }
+                
                 this.resources.setEntry(entryID, threeNode, description);
 
                 var m = description.matrix;
@@ -1022,22 +1064,20 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                 }
 
                 if (description.instanceSkin) {
+
                 	var skinEntry =  this.resources.getEntry(description.instanceSkin.skin);
+                	
                 	if (skinEntry) {
-                		var bones = [];
-                        var joints = skinEntry.description.joints;
-                        var that = this;
-                        joints.forEach( function(jointID){
-                        	var jointEntry = that.resources.getEntry(jointID);
-//                        	bones.push(jointEntry.object);
-                        });
-                        
+
+                		description.instanceSkin.skin = skinEntry.object;
+                        threeNode.instanceSkin = description.instanceSkin;
+
                 		var sources = description.instanceSkin.sources;
                         sources.forEach( function(meshID) {
                             meshEntry = this.resources.getEntry(meshID);
                             theLoader.meshesRequested++;
                             meshEntry.object.onComplete(function(mesh) {
-                                mesh.attachSkinToNode(threeNode, bones);
+                                mesh.attachSkinToNode(threeNode);
                                 theLoader.meshesLoaded++;
                                 theLoader.checkComplete();
                             });
@@ -1045,12 +1085,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                         
                 	}
                 }
-                
-                // N.B.: is this correct? Or jointID namespace might overlap w node name space?
-                if (description.jointId) {
-                	this.resources.setEntry(description.jointId, threeNode, description);
-                }
-                
+                                
                 if (description.camera) {
                     var cameraEntry = this.resources.getEntry(description.camera);
                     if (cameraEntry) {
@@ -1089,6 +1124,58 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                 return threeNode;
             }
         },
+
+        buildSkeletons: {
+            value: function(node) {
+        	
+                if (node.instanceSkin) {
+                    var skin = node.instanceSkin.skin;
+                    if (skin) {
+                        node.instanceSkin.skeletons.forEach(function(skeleton) {
+                            var nodeEntry = this.resources.getEntry(skeleton);
+                            if (nodeEntry) {
+                                var rootSkeleton = nodeEntry.object;
+                                var jointsIds = skin.jointsIds;
+                                var joints = [];
+
+                                jointsIds.forEach(function(jointId) {
+                                    var joint = this.joints[jointId];
+                                    if (joint) {
+                                        joints.push(joint);
+                                    } else {
+                                        console.log("WARNING: jointId:"+jointId+" cannot be found in skeleton:"+skeleton);
+                                    }
+                                }, this);
+
+                                skin.nodesForSkeleton[skeleton] = joints;
+                            }
+                        }, this);
+
+                        var meshSources = [];
+                        node.instanceSkin.sources.forEach(function(source) {
+                            var sourceEntry = this.resources.getEntry(source);
+                            if (sourceEntry) {
+                                meshSources.push(sourceEntry.entry);
+                            }
+                        }, this);
+                        skin.sources = meshSources;
+
+                    }
+                }
+                var children = node.children;
+                if (children) {
+                    children.forEach( function(child) {
+                        this.buildSkeletons(child);
+                    }, this);
+                }
+            }
+        },
+        
+        createMeshAnimations : {
+        	value : function(root) {
+        			this.buildSkeletons(root);
+        		}
+        },        
 
         handleScene: {
             value: function(entryID, description, userInfo) {
@@ -1266,7 +1353,43 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
         handleSkin: {
             value: function(entryID, description, userInfo) {
 	    		// Save skin entry
-	    		this.resources.setEntry(entryID, description, description);
+        	
+        		var skin = {
+        				nodesForSkeleton : {},
+        		};
+        		
+                var m = description.bindShapeMatrix;
+	            skin.bindShapeMatrix = new THREE.Matrix4(
+                        m[0],  m[4],  m[8],  m[12],
+                        m[1],  m[5],  m[9],  m[13],
+                        m[2],  m[6],  m[10], m[14],
+                        m[3],  m[7],  m[11], m[15]
+                    );
+	            
+	            skin.jointsIds = description.joints;
+	            var inverseBindMatricesDescription = description.inverseBindMatrices;
+	            skin.inverseBindMatricesDescription = inverseBindMatricesDescription;
+	            skin.inverseBindMatricesDescription.id = entryID + "_inverseBindMatrices";
+
+                var bufferEntry = this.resources.getEntry(inverseBindMatricesDescription.bufferView);
+
+                var paramObject = {
+                		bufferView : bufferEntry,
+                		byteOffset : inverseBindMatricesDescription.byteOffset,
+                		count : inverseBindMatricesDescription.count,
+                		type : inverseBindMatricesDescription.type,
+                		id : inverseBindMatricesDescription.bufferView,
+                		name : skin.inverseBindMatricesDescription.id             
+                };
+                
+	            var context = new InverseBindMatricesContext(paramObject, skin);
+
+                var alreadyProcessedAttribute = THREE.GLTFLoaderUtils.getBuffer(paramObject, inverseBindMatricesDelegate, context);
+
+	            var bufferView = this.resources.getEntry(skin.inverseBindMatricesDescription.bufferView);
+	            skin.inverseBindMatricesDescription.bufferView = 
+	            	bufferView.object;
+	    		this.resources.setEntry(entryID, skin, description);
                 return true;
             }
         },
@@ -1357,6 +1480,8 @@ THREE.glTFLoader.prototype.checkComplete = function() {
 			this.loader.buildAnimation(animation);
 		}
 		this.loader.createAnimations();
+		this.loader.createMeshAnimations(this.rootObj);
+        
 		this.callLoadedCallback();
 	}
 }
