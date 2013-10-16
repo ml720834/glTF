@@ -1143,12 +1143,22 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
 
                                     var geometry = primitive.geometry.geometry;
                                     var j;
-                            		for ( j = 0; j < geometry.vertices.length; j ++ ) {
-
-                            			geometry.vertices[j].applyMatrix4( skin.bindShapeMatrix );
-
-                            		}
-                                    
+                                    if (geometry.vertices) {
+	                            		for ( j = 0; j < geometry.vertices.length; j ++ ) {
+	                            			geometry.vertices[j].applyMatrix4( skin.bindShapeMatrix );	
+	                            		}
+                                    }
+                                    else if (geometry.attributes.position) {
+                                    	var a = geometry.attributes.position.array;
+                                    	var v = new THREE.Vector3;
+	                            		for ( j = 0; j < a.length / 3; j++ ) {
+	                            			v.set(a[j * 3], a[j * 3 + 1], a[j * 3 + 2]);
+	                            			v.applyMatrix4( skin.bindShapeMatrix );
+	                            			a[j * 3] = v.x;
+	                            			a[j * 3 + 1] = v.y;
+	                            			a[j * 3 + 2] = v.z;
+	                            		}
+                                    }
                                     primitive.material.side = THREE.FrontSide;
 
                                     if (dobones) {
