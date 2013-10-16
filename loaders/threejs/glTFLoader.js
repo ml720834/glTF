@@ -1119,45 +1119,6 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
             }
         },
 
-        /*
-        buildSkeletons: {
-            value: function(node) {
-        	
-                if (node.instanceSkin) {
-                    var skin = node.instanceSkin.skin;
-                    if (skin) {
-                        node.instanceSkin.skeletons.forEach(function(skeleton) {
-                            var nodeEntry = this.resources.getEntry(skeleton);
-                            if (nodeEntry) {
-                                var rootSkeleton = nodeEntry.object;
-                                var jointsIds = skin.jointsIds;
-                                var joints = [];
-
-                                jointsIds.forEach(function(jointId) {
-                                    var nodeForJoint = this.joints[jointId];
-                                    var joint = this.resources.getEntry(nodeForJoint).object;
-                                    if (joint) {
-                                        joints.push(joint);
-                                    } else {
-                                        console.log("WARNING: jointId:"+jointId+" cannot be found in skeleton:"+skeleton);
-                                    }
-                                }, this);
-
-                                skin.nodesForSkeleton[skeleton] = joints;
-                            }
-                        }, this);
-                    }
-                }
-                var children = node.children;
-                if (children) {
-                    children.forEach( function(child) {
-                        this.buildSkeletons(child);
-                    }, this);
-                }
-            }
-        },
-		*/
-
         buildSkin: {
             value: function(node) {
         	
@@ -1188,50 +1149,46 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                             		}
                                     
                                     primitive.material.side = THREE.FrontSide;
-                                    /* Don't do this 'till we have skinning really working, crashes
-                                    */
-                                    if (dobones)
+
+                                    if (dobones) {
+
                                     	primitive.material.skinning = true;
+        	                            
+                                    	threeMesh.boneInverses = [];
+        	                            var jointsIds = skin.jointsIds;
+        	                            var joints = [];
+        	                            var i, len = jointsIds.length;
+        	                            for (i = 0; i < len; i++) {
+        	                            	var jointId = jointsIds[i];
+        	                                var nodeForJoint = this.joints[jointId];
+        	                                var joint = this.resources.getEntry(nodeForJoint).object;
+        	                                if (joint) {
+        	                                	
+        	                                	joint.skin = threeMesh;
+        	                                    joints.push(joint);
+        	                                    threeMesh.bones.push(joint);
+        	                                    
+        	                                    var m = skin.inverseBindMatrices;
+        	                    	            var mat = new THREE.Matrix4(
+        	                                            m[i * 16 + 0],  m[i * 16 + 4],  m[i * 16 + 8],  m[i * 16 + 12],
+        	                                            m[i * 16 + 1],  m[i * 16 + 5],  m[i * 16 + 9],  m[i * 16 + 13],
+        	                                            m[i * 16 + 2],  m[i * 16 + 6],  m[i * 16 + 10], m[i * 16 + 14],
+        	                                            m[i * 16 + 3],  m[i * 16 + 7],  m[i * 16 + 11], m[i * 16 + 15]
+        	                                        );
+        	                                    threeMesh.boneInverses.push(mat);
+        	                                    threeMesh.pose();
+        	                                    
+        	                                } else {
+        	                                    console.log("WARNING: jointId:"+jointId+" cannot be found in skeleton:"+skeleton);
+        	                                }
+        	                            }
+                                    }
                                     
                                     threeMesh.castShadow = true;
                                     node.add(threeMesh);
-                                });
-                            	
+                                }, this);                            	
                             }
                             
-                            if (dobones) {
-                            threeMesh.boneInverses = [];
-                            var jointsIds = skin.jointsIds;
-                            var joints = [];
-                            var i, len = jointsIds.length;
-                            for (i = 0; i < len; i++) {
-                            	var jointId = jointsIds[i];
-                                var nodeForJoint = this.joints[jointId];
-                                var joint = this.resources.getEntry(nodeForJoint).object;
-                                if (joint) {
-                                	
-                                	joint.skin = threeMesh;
-                                    joints.push(joint);
-                                    threeMesh.bones.push(joint);
-                                    
-                                    var m = skin.inverseBindMatrices;
-                    	            var mat = new THREE.Matrix4(
-                                            m[i * 16 + 0],  m[i * 16 + 4],  m[i * 16 + 8],  m[i * 16 + 12],
-                                            m[i * 16 + 1],  m[i * 16 + 5],  m[i * 16 + 9],  m[i * 16 + 13],
-                                            m[i * 16 + 2],  m[i * 16 + 6],  m[i * 16 + 10], m[i * 16 + 14],
-                                            m[i * 16 + 3],  m[i * 16 + 7],  m[i * 16 + 11], m[i * 16 + 15]
-                                        );
-                                    threeMesh.boneInverses.push(mat);
-                                    threeMesh.pose();
-                                    
-                                } else {
-                                    console.log("WARNING: jointId:"+jointId+" cannot be found in skeleton:"+skeleton);
-                                }
-                            }
-                            }
-                            
-                            skin.nodesForSkeleton[skeleton] = joints;
-
                         }
 
                     
@@ -1440,7 +1397,6 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
 	    		// Save skin entry
         	
         		var skin = {
-        				nodesForSkeleton : {},
         		};
         		
                 var m = description.bindShapeMatrix;
