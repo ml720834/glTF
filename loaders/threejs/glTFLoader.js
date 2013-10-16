@@ -379,22 +379,6 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
         });
     };
 
-    Mesh.prototype.attachSkinToNode = function(threeNode) {
-        // Assumes that the geometry is complete
-        this.primitives.forEach(function(primitive) {
-            /*if(!primitive.mesh) {
-                primitive.mesh = new THREE.Mesh(primitive.geometry, primitive.material);
-            }*/
-            var threeMesh = new THREE.SkinnedMesh(primitive.geometry.geometry, primitive.material, false);
-            primitive.material.side = THREE.FrontSide;
-            /* Don't do this 'till we have skinning really working, crashes
-            primitive.material.skinning = true;
-            */
-            threeMesh.castShadow = true;
-            threeNode.add(threeMesh);
-        });
-    };
-    
     // Delegate for processing animation parameter buffers
     var AnimationParameterDelegate = function() {};
 
@@ -1087,7 +1071,6 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                             theLoader.meshesRequested++;
                             meshEntry.object.onComplete(function(mesh) {
                             	
-                                // mesh.attachSkinToNode(threeNode);
                             	skin.meshes.push(mesh);
                                 theLoader.meshesLoaded++;
                                 theLoader.checkComplete();
@@ -1196,6 +1179,13 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
 
                                     threeMesh = new THREE.SkinnedMesh(primitive.geometry.geometry, primitive.material, false);
                                     threeMesh.add(rootSkeleton);
+
+                                    var geometry = primitive.geometry.geometry;
+                            		for ( i = 0; i < geometry.vertices.length; i ++ ) {
+
+                            			geometry.vertices[i].applyMatrix4( skin.bindShapeMatrix );
+
+                            		}
                                     
                                     primitive.material.side = THREE.FrontSide;
                                     /* Don't do this 'till we have skinning really working, crashes
