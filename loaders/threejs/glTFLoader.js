@@ -1150,16 +1150,6 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                                 skin.nodesForSkeleton[skeleton] = joints;
                             }
                         }, this);
-
-                        var meshSources = [];
-                        node.instanceSkin.sources.forEach(function(source) {
-                            var sourceEntry = this.resources.getEntry(source);
-                            if (sourceEntry) {
-                                meshSources.push(sourceEntry.entry);
-                            }
-                        }, this);
-                        skin.sources = meshSources;
-
                     }
                 }
                 var children = node.children;
