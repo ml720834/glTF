@@ -162,6 +162,10 @@ THREE.GLTFLoaderUtils = Object.create(Object, {
                     return Float32Array.BYTES_PER_ELEMENT * 3;
                 case "FLOAT_VEC4" :
                     return Float32Array.BYTES_PER_ELEMENT * 4;
+                case "FLOAT_MAT3" :
+                    return Float32Array.BYTES_PER_ELEMENT * 9;
+                case "FLOAT_MAT4" :
+                    return Float32Array.BYTES_PER_ELEMENT * 16;
                 default:
                     return null;
             }

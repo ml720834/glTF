@@ -66,6 +66,8 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                 return 3;
             case "FLOAT_VEC4" :
                 return 4;
+            case "FLOAT_MAT4" :
+                return 16;
             default:
                 return null;
         }
@@ -1139,7 +1141,8 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                                 var joints = [];
 
                                 jointsIds.forEach(function(jointId) {
-                                    var joint = this.joints[jointId];
+                                    var nodeForJoint = this.joints[jointId];
+                                    var joint = this.resources.getEntry(nodeForJoint).object;
                                     if (joint) {
                                         joints.push(joint);
                                     } else {
