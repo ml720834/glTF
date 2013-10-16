@@ -1142,9 +1142,10 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                                     threeMesh.add(rootSkeleton);
 
                                     var geometry = primitive.geometry.geometry;
-                            		for ( i = 0; i < geometry.vertices.length; i ++ ) {
+                                    var j;
+                            		for ( j = 0; j < geometry.vertices.length; j ++ ) {
 
-                            			geometry.vertices[i].applyMatrix4( skin.bindShapeMatrix );
+                            			geometry.vertices[j].applyMatrix4( skin.bindShapeMatrix );
 
                             		}
                                     
