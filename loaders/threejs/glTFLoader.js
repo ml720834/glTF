@@ -497,8 +497,12 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
         // FIXME: report error
         console.log("ERROR(ShaderDelegate):"+errorCode+":"+info);
     };
+
+    ShaderDelegate.prototype.convert = function(resource, ctx) {
+    	return resource; 
+    }
     
-    ShaderDelegate.prototype.fileAvailable = function(data, ctx) {
+    ShaderDelegate.prototype.resourceAvailable = function(data, ctx) {
         theLoader.shadersLoaded++;
         theLoader.shaders[ctx.id] = data;
 //    	console.log("Shader loaded: ", ctx.id, "from path ", ctx.path);

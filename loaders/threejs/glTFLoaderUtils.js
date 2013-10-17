@@ -209,49 +209,15 @@ THREE.GLTFLoaderUtils = Object.create(Object, {
 
     		request.delegate = delegate;
     		request.ctx = ctx;
-    		
-	        var resourceStatus = this._resourcesStatus[request.id];
-	        if (resourceStatus)
-	        {
-	        	this._resourcesStatus[request.id]++;
-	        }
-	        else
-	        {
-	        	this._resourcesStatus[request.id] = 1;
-	        }
-	        
-	        var streamStatus = this._streamsStatus[request.path];
-	        if (streamStatus && streamStatus.status === "loading" )
-	        {
-	        	streamStatus.requests.push(request);
-	            return;
-	        }
-	        
-	        this._streamsStatus[request.path] = { status : "loading", requests : [request] };
-			
-	        var self = this;
-	        var processFileDelegate = {};
-	
-	        processFileDelegate.streamAvailable = function(path, file) {
-	        	var streamStatus = self._streamsStatus[path];
-	        	var requests = streamStatus.requests;
-	            requests.forEach( function(req_) {
-	                req_.delegate.fileAvailable(file, req_.ctx);
-	                --self._resourcesStatus[req_.id];
-	
-	            }, this);
-	        	
-	            delete self._streamsStatus[path];
-	
-	        };
-	
-	        processFileDelegate.handleError = function(errorCode, info) {
-	            request.delegate.handleError(errorCode, info);
-	        }
-	
-	        this._loadStream(request.path, "text", processFileDelegate);
-	
-	        return null;
+
+            this._handleRequest({   "id" : request.id,
+                "path" : request.path,
+                "range" : [0],
+                "type" : "text",
+                "delegate" : delegate,
+                "ctx" : ctx }, null);
+    	
+            return null;
 	    }
 	},    
 });
