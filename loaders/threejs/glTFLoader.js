@@ -9,6 +9,7 @@ THREE.glTFLoader = function ( container, showStatus ) {
 			THREE.glTFLoader.useBufferGeometry : true;
     this.meshesRequested = 0;
     this.meshesLoaded = 0;
+    this.pendingMeshes = [];
     this.animationsRequested = 0;
     this.animationsLoaded = 0;
     this.animations = [];
@@ -351,25 +352,11 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
             self.checkComplete();
         };
         
-        if (material instanceof THREE.Material) {
-	        this.primitives.push({
-	            geometry: geometry,
-	            material: material,
-	            mesh: null
-	        });
-        }
-        else {
-        	this.materialsPending.push({
-        		material : material,
-        		index : this.primitives.length,
-        	});
-        	
-	        this.primitives.push({
-	            geometry: geometry,
-	            material: null,
-	            mesh: null
-	        });        	
-        }
+        this.primitives.push({
+            geometry: geometry,
+            material: material,
+            mesh: null
+        });
     };
 
     Mesh.prototype.onComplete = function(callback) {
@@ -393,14 +380,14 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
             /*if(!primitive.mesh) {
                 primitive.mesh = new THREE.Mesh(primitive.geometry, primitive.material);
             }*/
-        	if (primitive.material instanceof THREE.Material) {
-	            var threeMesh = new THREE.Mesh(primitive.geometry.geometry, primitive.material);
-	            threeMesh.castShadow = true;
-	            threeNode.add(threeMesh);
+        	var material = primitive.material;
+        	if (!(material instanceof THREE.Material)) {
+        		material = theLoader.createShaderMaterial(material);
         	}
-        	else {
-        		console.log("Delayed load material", primitive.material);
-        	}
+
+        	var threeMesh = new THREE.Mesh(primitive.geometry.geometry, material);
+            threeMesh.castShadow = true;
+            threeNode.add(threeMesh);
         });
     };
 
@@ -532,7 +519,6 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
     ShaderDelegate.prototype.resourceAvailable = function(data, ctx) {
         theLoader.shadersLoaded++;
         theLoader.shaders[ctx.id] = data;
-//    	console.log("Shader loaded: ", ctx.id, "from path ", ctx.path);
         return true;
     };
 
@@ -664,7 +650,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
 
                 var shaderContext = new ShaderContext(entryID, description.path);
 
-                this.shadersRequested++;
+                theLoader.shadersRequested++;
         		THREE.GLTFLoaderUtils.getFile(shaderRequest, shaderDelegate, shaderContext);
         		
                 return true;
@@ -685,31 +671,49 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
             }
         },
 
+        createShaderMaterial : {
+        	value: function(material) {
+        		
+        		var fragmentShader = theLoader.shaders[material.params.fragmentShader];
+        		if (!fragmentShader) {
+                    console.log("ERROR: Missing fragment shader definition:", material.params.fragmentShader);
+            		return new THREE.MeshPhongMaterial;
+        		}
+        		
+        		var vertexShader = theLoader.shaders[material.params.vertexShader];
+        		if (!fragmentShader) {
+                    console.log("ERROR: Missing vertex shader definition:", material.params.vertexShader);
+            		return new THREE.MeshPhongMaterial;
+        		}
+        		
+        		var uniforms = {};
+        		var shaderMaterial = new THREE.ShaderMaterial( {
+
+        			fragmentShader: fragmentShader,
+        			vertexShader: vertexShader,
+        			uniforms: uniforms,
+
+        		} );
+
+        		return new THREE.MeshPhongMaterial(material.params);
+        	}
+        },
+        
         createShaderParams : {
-        	value: function(values, params, instanceProgram) {
+        	value: function(materialId, values, params, instanceProgram) {
 				var program = this.resources.getEntry(instanceProgram.program);
 				
 				if (program) {
-					var fsid = program.description.fragmentShader;
-					var vsid = program.description.vertexShader;
-					var fragmentShader = this.resources.getEntry(fsid);
-					var vertexShader = this.resources.getEntry(vsid);
-					
-					params.fragmentShader = fragmentShader.description.path;
-					params.vertexShader = vertexShader.description.path;
+					params.fragmentShader = program.description.fragmentShader;
+					params.vertexShader = program.description.vertexShader;
 					params.attributes = instanceProgram.attributes;
 					params.uniforms = instanceProgram.uniforms;
-					
-					return false;
-				}
-				else {
-					return false;
 				}
         	}
         },
         
         threeJSMaterialType : {
-            value: function(technique, values, params) {
+            value: function(materialId, technique, values, params) {
         	
         		var materialType = THREE.MeshPhongMaterial;
         		var defaultPass = null;
@@ -747,12 +751,12 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
         				
         				var instanceProgram = defaultPass.instanceProgram;
 
-    					this.createShaderParams(values, params, instanceProgram);
+    					this.createShaderParams(materialId, values, params, instanceProgram);
     					
-    					var loadshaders = false;
+    					var loadshaders = true;
     					
     					if (loadshaders) {
-    						return Material;
+    						materialType = Material;
     					}
         			}
         		}
@@ -903,10 +907,10 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                 	values[vals[i].parameter] = vals[i];
                 }
 
-                var materialType = this.threeJSMaterialType(technique, values, materialParams);
+                var materialType = this.threeJSMaterialType(entryID, technique, values, materialParams);
 
                 var material = new materialType(materialParams);
-
+                
                 this.resources.setEntry(entryID, material, description);
 
                 return true;
@@ -932,8 +936,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                         var geometry = new ClassicGeometry();
                         var materialEntry = this.resources.getEntry(primitiveDescription.material);
 
-                        mesh.addPrimitive(geometry, materialEntry.object ? materialEntry.object :
-                        	primitiveDescription.material);
+                        mesh.addPrimitive(geometry, materialEntry.object);
 
                         var indices = this.resources.getEntry(primitiveDescription.indices);
                         var bufferEntry = this.resources.getEntry(indices.description.bufferView);
@@ -1082,6 +1085,15 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
             }
         },
 
+        addPendingMesh: {
+            value: function(mesh, threeNode) {
+        		theLoader.pendingMeshes.push({
+        			mesh: mesh,
+        			node: threeNode
+        		});
+        	}
+        },
+        
         handleNode: {
             value: function(entryID, description, userInfo) {
 
@@ -1139,7 +1151,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                     meshEntry = this.resources.getEntry(description.mesh);
                     theLoader.meshesRequested++;
                     meshEntry.object.onComplete(function(mesh) {
-                        mesh.attachToNode(threeNode);
+                    	self.addPendingMesh(mesh, threeNode);
                         theLoader.meshesLoaded++;
                         theLoader.checkComplete();
                     });
@@ -1150,7 +1162,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                         meshEntry = this.resources.getEntry(meshID);
                         theLoader.meshesRequested++;
                         meshEntry.object.onComplete(function(mesh) {
-                            mesh.attachToNode(threeNode);
+                        	self.addPendingMesh(mesh, threeNode);
                             theLoader.meshesLoaded++;
                             theLoader.checkComplete();
                         });
@@ -1241,9 +1253,14 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                             	var threeMesh = null;
                                 mesh.primitives.forEach(function(primitive) {
 
-                                    threeMesh = new THREE.SkinnedMesh(primitive.geometry.geometry, primitive.material, false);
-                                    threeMesh.add(rootSkeleton);
+                                	var material = primitive.material;
+                                	if (!(material instanceof THREE.Material)) {
+                                		material = this.createShaderMaterial(material);
+                                	}
 
+                                	threeMesh = new THREE.SkinnedMesh(primitive.geometry.geometry, material, false);
+                            		threeMesh.add(rootSkeleton);
+                                	
                                     var geometry = primitive.geometry.geometry;
                                     var j;
                                     if (geometry.vertices) {
@@ -1263,9 +1280,9 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
 	                            		}
                                     }
 
-                                    if (dobones) {
+                                    if (threeMesh && dobones) {
 
-                                    	primitive.material.skinning = true;
+                                    	material.skinning = true;
         	                            
                                     	threeMesh.boneInverses = [];
         	                            var jointsIds = skin.jointsIds;
@@ -1297,8 +1314,11 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
         	                            }
                                     }
                                     
-                                    threeMesh.castShadow = true;
-                                    node.add(threeMesh);
+                                    if (threeMesh) {
+                                    	threeMesh.castShadow = true;
+                                    	node.add(threeMesh);
+                                    }
+                                    
                                 }, this);                            	
                             }
                             
@@ -1627,12 +1647,20 @@ THREE.glTFLoader.prototype.callLoadedCallback = function() {
 
 THREE.glTFLoader.prototype.checkComplete = function() {
 	if (this.meshesLoaded == this.meshesRequested 
+			&& this.shadersLoaded == this.shadersRequested
 			&& this.animationsLoaded == this.animationsRequested)
 	{
+		
+		for (var i = 0; i < this.pendingMeshes.length; i++) {
+			var pending = this.pendingMeshes[i];
+			pending.mesh.attachToNode(pending.node);
+		}
+		
 		for (var i = 0; i < this.animationsLoaded; i++) {
 			var animation = this.animations[i];
 			this.loader.buildAnimation(animation);
 		}
+
 		this.loader.createAnimations();
 		this.loader.createMeshAnimations(this.rootObj);
         
