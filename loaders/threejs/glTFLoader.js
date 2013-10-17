@@ -12,6 +12,9 @@ THREE.glTFLoader = function ( container, showStatus ) {
     this.animationsRequested = 0;
     this.animationsLoaded = 0;
     this.animations = [];
+    this.shadersRequested = 0;
+    this.shadersLoaded = 0;
+    this.shaders = {};
     THREE.Loader.call( this, showStatus );
 }
 
@@ -487,6 +490,28 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
         this.skin = skin;
     };
 
+    // Delegate for processing shaders from external files
+    var ShaderDelegate = function() {};
+
+    ShaderDelegate.prototype.handleError = function(errorCode, info) {
+        // FIXME: report error
+        console.log("ERROR(ShaderDelegate):"+errorCode+":"+info);
+    };
+    
+    ShaderDelegate.prototype.fileAvailable = function(data, ctx) {
+        theLoader.shadersLoaded++;
+        theLoader.shaders[ctx.id] = data;
+//    	console.log("Shader loaded: ", ctx.id, "from path ", ctx.path);
+        return true;
+    };
+
+    var shaderDelegate = new ShaderDelegate();
+
+    var ShaderContext = function(id, path) {
+    	this.id = id;
+    	this.path = path;
+    };
+    
     // Resource management
 
     var ResourceEntry = function(entryID, object, description) {
@@ -601,6 +626,16 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
         handleShader: {
             value: function(entryID, description, userInfo) {
         		this.resources.setEntry(entryID, null, description);
+        		var shaderRequest = {
+        				id : entryID,
+        				path : description.path,
+        		};
+
+                var shaderContext = new ShaderContext(entryID, description.path);
+
+                this.shadersRequested++;
+        		THREE.GLTFLoaderUtils.getFile(shaderRequest, shaderDelegate, shaderContext);
+        		
                 return true;
             }
         },
@@ -1191,7 +1226,6 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
 	                            			a[j * 3 + 2] = v.z;
 	                            		}
                                     }
-                                    primitive.material.side = THREE.FrontSide;
 
                                     if (dobones) {
 
