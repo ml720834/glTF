@@ -338,21 +338,38 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
 
     var Mesh = function() {
         this.primitives = [];
+        this.materialsPending = [];
         this.loadedGeometry = 0;
         this.onCompleteCallbacks = [];
     };
 
     Mesh.prototype.addPrimitive = function(geometry, material) {
-        var self = this;
+        
+    	var self = this;
         geometry.onload = function() {
             self.loadedGeometry++;
             self.checkComplete();
         };
-        this.primitives.push({
-            geometry: geometry,
-            material: material,
-            mesh: null
-        });
+        
+        if (material instanceof THREE.Material) {
+	        this.primitives.push({
+	            geometry: geometry,
+	            material: material,
+	            mesh: null
+	        });
+        }
+        else {
+        	this.materialsPending.push({
+        		material : material,
+        		index : this.primitives.length,
+        	});
+        	
+	        this.primitives.push({
+	            geometry: geometry,
+	            material: null,
+	            mesh: null
+	        });        	
+        }
     };
 
     Mesh.prototype.onComplete = function(callback) {
@@ -376,12 +393,22 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
             /*if(!primitive.mesh) {
                 primitive.mesh = new THREE.Mesh(primitive.geometry, primitive.material);
             }*/
-            var threeMesh = new THREE.Mesh(primitive.geometry.geometry, primitive.material);
-            threeMesh.castShadow = true;
-            threeNode.add(threeMesh);
+        	if (primitive.material instanceof THREE.Material) {
+	            var threeMesh = new THREE.Mesh(primitive.geometry.geometry, primitive.material);
+	            threeMesh.castShadow = true;
+	            threeNode.add(threeMesh);
+        	}
+        	else {
+        		console.log("Delayed load material", primitive.material);
+        	}
         });
     };
 
+    // Delayed-loaded material
+    var Material = function(params) {
+    	this.params = params;
+    };
+    
     // Delegate for processing animation parameter buffers
     var AnimationParameterDelegate = function() {};
 
@@ -720,9 +747,13 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
         				
         				var instanceProgram = defaultPass.instanceProgram;
 
-    					if (this.createShaderParams(values, params, instanceProgram)) {
-        					return THREE.ShaderMaterial;
-        				}
+    					this.createShaderParams(values, params, instanceProgram);
+    					
+    					var loadshaders = false;
+    					
+    					if (loadshaders) {
+    						return Material;
+    					}
         			}
         		}
         		
@@ -901,7 +932,8 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
                         var geometry = new ClassicGeometry();
                         var materialEntry = this.resources.getEntry(primitiveDescription.material);
 
-                        mesh.addPrimitive(geometry, materialEntry.object);
+                        mesh.addPrimitive(geometry, materialEntry.object ? materialEntry.object :
+                        	primitiveDescription.material);
 
                         var indices = this.resources.getEntry(primitiveDescription.indices);
                         var bufferEntry = this.resources.getEntry(indices.description.bufferView);
