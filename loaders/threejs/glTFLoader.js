@@ -600,14 +600,14 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
 
         handleShader: {
             value: function(entryID, description, userInfo) {
-                // No shader handling at this time
+        		this.resources.setEntry(entryID, null, description);
                 return true;
             }
         },
 
         handleProgram: {
             value: function(entryID, description, userInfo) {
-                // No program handling at this time
+        		this.resources.setEntry(entryID, null, description);
                 return true;
             }
         },
@@ -619,40 +619,72 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
             }
         },
 
+        createShaderParams : {
+        	value: function(values, params, instanceProgram) {
+				var program = this.resources.getEntry(instanceProgram.program);
+				
+				if (program) {
+					var fsid = program.description.fragmentShader;
+					var vsid = program.description.vertexShader;
+					var fragmentShader = this.resources.getEntry(fsid);
+					var vertexShader = this.resources.getEntry(vsid);
+					
+					params.fragmentShader = fragmentShader.description.path;
+					params.vertexShader = vertexShader.description.path;
+					params.attributes = instanceProgram.attributes;
+					params.uniforms = instanceProgram.uniforms;
+					
+					return false;
+				}
+				else {
+					return false;
+				}
+        	}
+        },
+        
         threeJSMaterialType : {
             value: function(technique, values, params) {
         	
         		var materialType = THREE.MeshPhongMaterial;
-        
-        		if (technique && technique.description && technique.description.passes &&
-        				technique.description.passes.defaultPass && technique.description.passes.defaultPass.details &&
-        				technique.description.passes.defaultPass.details.commonProfile)
-        		{
-            		var profile = technique.description.passes.defaultPass.details.commonProfile;
-            		if (profile)
-            		{
-	            		switch (profile.lightingModel)
+        		var defaultPass = null;
+        		if (technique && technique.description && technique.description.passes)
+        			defaultPass = technique.description.passes.defaultPass;
+        		
+        		if (defaultPass) {
+        			if (defaultPass.details && defaultPass.details.commonProfile) {
+	            		var profile = technique.description.passes.defaultPass.details.commonProfile;
+	            		if (profile)
 	            		{
-	            			case 'Blinn' :
-	            			case 'Phong' :
-	            				materialType = THREE.MeshPhongMaterial;
-	            				break;
-
-	            			case 'Lambert' :
-	            				materialType = THREE.MeshLambertMaterial;
-	            				break;
-	            				
-	            			default :
-	            				materialType = THREE.MeshBasicMaterial;
-	            				break;
+		            		switch (profile.lightingModel)
+		            		{
+		            			case 'Blinn' :
+		            			case 'Phong' :
+		            				materialType = THREE.MeshPhongMaterial;
+		            				break;
+	
+		            			case 'Lambert' :
+		            				materialType = THREE.MeshLambertMaterial;
+		            				break;
+		            				
+		            			default :
+		            				materialType = THREE.MeshBasicMaterial;
+		            				break;
+		            		}
+		            		
+		            		if (profile.extras && profile.extras.doubleSided)
+		            		{
+		            			params.side = THREE.DoubleSide;
+		            		}
 	            		}
-	            		
-	            		if (profile.extras && profile.extras.doubleSided)
-	            		{
-	            			params.side = THREE.DoubleSide;
-	            		}
-            		}
+        			}
+        			else if (defaultPass.instanceProgram) {
+        				
+        				var instanceProgram = defaultPass.instanceProgram;
 
+    					if (this.createShaderParams(values, params, instanceProgram)) {
+        					return THREE.ShaderMaterial;
+        				}
+        			}
         		}
         		
                 var texturePath = null;
